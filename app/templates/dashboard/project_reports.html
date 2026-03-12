@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Project Reports - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.reports') }}">Reports</a></li>
+                <li class="breadcrumb-item active">Project Reports</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Project Reports</h1>
+        <p class="page-subtitle">Detailed participation and completion reports for your projects</p>
+    </div>
+
+    {% if reports %}
+    {% for report in reports %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">{{ report.project.title }}</h5>
+                <small class="text-muted">Created {{ report.project.created_at.strftime('%b %d, %Y') }}</small>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-{{ 'success' if report.project.status == 'completed' else 'primary' if report.project.status == 'in_progress' else 'secondary' }}">
+                    {{ report.project.status|replace('_', ' ')|title }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Project Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h3 class="text-primary mb-0">{{ report.member_count }}</h3>
+                        <small class="text-muted">Team Members</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h3 class="text-success mb-0">{{ report.total_contributions }}</h3>
+                        <small class="text-muted">Total Contributions</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h3 class="text-info mb-0">{{ report.progress }}%</h3>
+                        <small class="text-muted">Progress</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" style="width: {{ report.progress }}%"></div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">Completion</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member Contributions -->
+            {% if report.members %}
+            <h6 class="mb-3">Team Member Contributions</h6>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Contributions</th>
+                            <th>Hours Spent</th>
+                            <th>Contribution %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in report.members %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-sm me-2">
+                                        {{ member.user.first_name[0] }}{{ member.user.last_name[0] }}
+                                    </div>
+                                    {{ member.user.full_name }}
+                                </div>
+                            </td>
+                            <td>{{ member.contributions }}</td>
+                            <td>{{ member.hours }} hrs</td>
+                            <td>
+                                {% set pct = (member.contributions / report.total_contributions * 100)|round|int if report.total_contributions > 0 else 0 %}
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar" style="width: {{ pct }}%"></div>
+                                    </div>
+                                    <small>{{ pct }}%</small>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No team members yet.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <a href="{{ url_for('projects.view_project', project_id=report.project.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>View Project
+            </a>
+            <a href="{{ url_for('projects.view_team', project_id=report.project.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-people me-1"></i>View Team
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-folder-x display-4 text-muted"></i>
+            <p class="text-muted mt-3">You haven't created any projects yet.</p>
+            <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+                <i class="bi bi-plus me-1"></i>Create Project
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

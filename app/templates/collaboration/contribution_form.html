@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Log Contribution - {{ project.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('projects.my_projects') }}">My Projects</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('collaboration.contributions', project_id=project.id) }}">Contributions</a></li>
+                        <li class="breadcrumb-item active">Log Contribution</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Log Your Contribution</h1>
+                <p class="page-subtitle">Record your work on {{ project.title }}</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Contribution Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('collaboration.add_contribution', project_id=project.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.description.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.description(class="form-control", rows="4", placeholder="Describe what you worked on...") }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">Be specific about what you accomplished (10-1000 characters)</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.contribution_type.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.contribution_type(class="form-select") }}
+                                {% if form.contribution_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.contribution_type.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.hours_spent.label.text }}</label>
+                                {{ form.hours_spent(class="form-control", placeholder="e.g., 2.5") }}
+                                {% if form.hours_spent.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.hours_spent.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">Optional: How many hours did this take?</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.date.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.date(class="form-control", type="date") }}
+                                {% if form.date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.date.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.milestone.label.text }}</label>
+                                {{ form.milestone(class="form-select") }}
+                                {% if form.milestone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.milestone.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">Optional: Link to a project milestone</small>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>Log Contribution
+                            </button>
+                            <a href="{{ url_for('collaboration.contributions', project_id=project.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Tips for Logging Contributions</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Be specific about what you accomplished</li>
+                        <li>Include relevant details like files modified, features added, or issues fixed</li>
+                        <li>Log contributions regularly to maintain an accurate record</li>
+                        <li>Link to milestones when your work directly relates to project goals</li>
+                        <li>Track your hours to help with project planning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

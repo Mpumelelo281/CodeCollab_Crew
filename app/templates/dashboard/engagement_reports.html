@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Engagement Reports - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.reports') }}">Reports</a></li>
+                <li class="breadcrumb-item active">Engagement Reports</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Student Engagement Reports</h1>
+        <p class="page-subtitle">Track student activity and engagement across your projects</p>
+    </div>
+
+    {% if engagement_data %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-people me-2"></i>Student Engagement Overview</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Project</th>
+                            <th>Contributions</th>
+                            <th>Hours Spent</th>
+                            <th>Last Activity</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in engagement_data %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-sm me-2">
+                                        {{ data.user.first_name[0] }}{{ data.user.last_name[0] }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ data.user.full_name }}</strong>
+                                        <br><small class="text-muted">{{ data.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('projects.view_project', project_id=data.project.id) }}">
+                                    {{ data.project.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if data.contributions >= 10 else 'warning' if data.contributions >= 5 else 'secondary' }}">
+                                    {{ data.contributions }}
+                                </span>
+                            </td>
+                            <td>{{ data.hours }} hrs</td>
+                            <td>
+                                {% if data.days_since_last is not none %}
+                                    {% if data.days_since_last == 0 %}
+                                    <span class="text-success"><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Today</span>
+                                    {% elif data.days_since_last <= 7 %}
+                                    <span class="text-primary">{{ data.days_since_last }} days ago</span>
+                                    {% elif data.days_since_last <= 30 %}
+                                    <span class="text-warning">{{ data.days_since_last }} days ago</span>
+                                    {% else %}
+                                    <span class="text-danger">{{ data.days_since_last }} days ago</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">No activity</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ data.joined_at.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                {% if data.days_since_last is none %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% elif data.days_since_last <= 7 %}
+                                <span class="badge bg-success">Active</span>
+                                {% elif data.days_since_last <= 30 %}
+                                <span class="badge bg-warning">Low Activity</span>
+                                {% else %}
+                                <span class="badge bg-danger">Dormant</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engagement Summary -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-success">
+                        {{ engagement_data|selectattr('days_since_last', '!=', none)|selectattr('days_since_last', '<=', 7)|list|length }}
+                    </h3>
+                    <p class="text-muted mb-0">Active Students (last 7 days)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">
+                        {{ engagement_data|selectattr('days_since_last', '!=', none)|selectattr('days_since_last', '>', 7)|selectattr('days_since_last', '<=', 30)|list|length }}
+                    </h3>
+                    <p class="text-muted mb-0">Low Activity (7-30 days)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">
+                        {% set inactive_count = engagement_data|selectattr('days_since_last', 'none')|list|length %}
+                        {% set dormant_count = engagement_data|selectattr('days_since_last', '!=', none)|selectattr('days_since_last', '>', 30)|list|length %}
+                        {{ inactive_count + dormant_count }}
+                    </h3>
+                    <p class="text-muted mb-0">Inactive/Dormant</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people display-4 text-muted"></i>
+            <p class="text-muted mt-3">No students enrolled in your projects yet.</p>
+            <a href="{{ url_for('projects.my_projects') }}" class="btn btn-primary">
+                <i class="bi bi-folder me-1"></i>Manage Projects
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

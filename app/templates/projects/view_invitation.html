@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Project Invitation - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-envelope-open fs-4 me-2"></i>
+                        <h5 class="mb-0">Project Invitation</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title mb-3">{{ invitation.project.title }}</h4>
+                    
+                    <p class="card-text">{{ invitation.project.description }}</p>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Invited by</small>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar me-2">
+                                {{ invitation.invited_by.first_name[0] }}{{ invitation.invited_by.last_name[0] }}
+                            </div>
+                            <div>
+                                <strong>{{ invitation.invited_by.full_name }}</strong>
+                                <br><small class="text-muted">{{ invitation.invited_by.email }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if invitation.message %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Message</small>
+                        <div class="alert alert-light">
+                            "{{ invitation.message }}"
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Team Size</small>
+                            <strong>{{ invitation.project.team_count }} members</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Status</small>
+                            <span class="status-badge status-{{ invitation.project.status }}">
+                                {{ invitation.project.status.replace('_', ' ') }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if invitation.project.skills %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Required Skills</small>
+                        {% for skill in invitation.project.skills %}
+                        <span class="skill-tag">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Received</small>
+                        <strong>{{ invitation.created_at.strftime('%B %d, %Y at %I:%M %p') }}</strong>
+                    </div>
+                    
+                    {% if invitation.expires_at %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Expires</small>
+                        <strong>{{ invitation.expires_at.strftime('%B %d, %Y at %I:%M %p') }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if invitation.status == 'pending' %}
+                <div class="card-footer">
+                    <div class="d-flex gap-2">
+                        <form action="{{ url_for('projects.accept_invitation', invitation_id=invitation.id) }}" method="POST" class="flex-grow-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle me-1"></i>Accept Invitation
+                            </button>
+                        </form>
+                        <form action="{{ url_for('projects.decline_invitation', invitation_id=invitation.id) }}" method="POST" class="flex-grow-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-x-circle me-1"></i>Decline
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card-footer text-center text-muted">
+                    This invitation has been {{ invitation.status }}.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

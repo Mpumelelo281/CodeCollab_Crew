@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Create Project - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">Projects</a></li>
+                <li class="breadcrumb-item active">Create Project</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Create New Project</h1>
+        <p class="page-subtitle">Define your project details and requirements</p>
+    </div>
+    
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-lightbulb me-2"></i>
+        <strong>Tip:</strong> After creating your project, you can invite team members using a shareable link or by searching for users directly from your project page.
+    </div>
+
+    <form method="POST" action="{{ url_for('projects.create_project') }}" class="needs-validation" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <div class="row g-4">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Project Title <span class="text-danger">*</span></label>
+                            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="Enter a descriptive project title") }}
+                            {% if form.title.errors %}
+                            <div class="invalid-feedback">{{ form.title.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="5", placeholder="Provide a detailed description of your project (minimum 50 characters)") }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback">{{ form.description.errors[0] }}</div>
+                            {% endif %}
+                            <div class="form-text">Minimum 50 characters required</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="goals" class="form-label">Project Goals</label>
+                            {{ form.goals(class="form-control", rows="3", placeholder="What are the main objectives of this project?") }}
+                            {% if form.goals.errors %}
+                            <div class="invalid-feedback">{{ form.goals.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="expected_outcomes" class="form-label">Expected Outcomes</label>
+                            {{ form.expected_outcomes(class="form-control", rows="3", placeholder="What should students learn or produce?") }}
+                            {% if form.expected_outcomes.errors %}
+                            <div class="invalid-feedback">{{ form.expected_outcomes.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Skills & Tools -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Skills & Technologies</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Required Skills</label>
+                            {{ form.skills(class="form-control", placeholder="e.g., Python, Data Analysis, Machine Learning") }}
+                            <div class="form-text">Enter skills separated by commas</div>
+                            {% if form.skills.errors %}
+                            <div class="invalid-feedback d-block">{{ form.skills.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tools" class="form-label">Tools & Technologies</label>
+                            {{ form.tools(class="form-control", placeholder="e.g., VS Code, Git, Docker, PostgreSQL") }}
+                            <div class="form-text">Enter tools/technologies separated by commas</div>
+                            {% if form.tools.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tools.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timeline -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-calendar me-2"></i>Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="start_date" class="form-label">Start Date</label>
+                                {{ form.start_date(class="form-control", type="date") }}
+                                {% if form.start_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.start_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_date" class="form-label">End Date</label>
+                                {{ form.end_date(class="form-control", type="date") }}
+                                {% if form.end_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.end_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="application_deadline" class="form-label">Application Deadline</label>
+                                {{ form.application_deadline(class="form-control", type="datetime-local") }}
+                                <div class="form-text">Students can apply until this date</div>
+                                {% if form.application_deadline.errors %}
+                                <div class="invalid-feedback d-block">{{ form.application_deadline.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Status & Visibility -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                            {{ form.status(class="form-control") }}
+                            <div class="form-text">
+                                <strong>Draft:</strong> Only visible to you<br>
+                                <strong>Open:</strong> Accepting applications
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="visibility" class="form-label">Visibility</label>
+                            {{ form.visibility(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Organization -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-building me-2"></i>Organization</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                            {{ form.department(class="form-control" + (" is-invalid" if form.department.errors else "")) }}
+                            {% if form.department.errors %}
+                            <div class="invalid-feedback">{{ form.department.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="course" class="form-label">Related Course</label>
+                            {{ form.course(class="form-control") }}
+                            <div class="form-text">Optional: Link to a specific course</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Team Size -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Team Size</h5>
+                    </div>
+                    <div class="card-body">
+                        <label for="team_size" class="form-label">Expected team size <small class="text-muted">(0 or empty = flexible)</small></label>
+                        {{ form.team_size(class="form-control" + (" is-invalid" if form.team_size.errors else ""), min="0", placeholder="Leave empty for flexible team size") }}
+                        {% if form.team_size.errors %}
+                        <div class="invalid-feedback">{{ form.team_size.errors[0] }}</div>
+                        {% endif %}
+                        <div class="form-text">Set your expected team size, or leave as 0 for unlimited members</div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Create Project
+                            </button>
+                            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

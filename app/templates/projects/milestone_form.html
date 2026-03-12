@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Create Milestone - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_milestones', project_id=project.id) }}">Milestones</a></li>
+                <li class="breadcrumb-item active">Create Milestone</li>
+            </ol>
+        </nav>
+        
+        <h1 class="page-title">Create New Milestone</h1>
+        <p class="page-subtitle">Set a goal or deadline for your project</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Milestone Details</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('projects.create_milestone', project_id=project.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Milestone Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}" 
+                                   id="title" name="title" value="{{ form.title.data or '' }}"
+                                   placeholder="e.g., Complete UI Design, Submit Final Report">
+                            {% if form.title.errors %}
+                            <div class="invalid-feedback">{{ form.title.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      id="description" name="description" rows="4"
+                                      placeholder="Describe what needs to be accomplished for this milestone">{{ form.description.data or '' }}</textarea>
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback">{{ form.description.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="due_date" class="form-label">Due Date <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control {% if form.due_date.errors %}is-invalid{% endif %}" 
+                                       id="due_date" name="due_date" 
+                                       value="{{ form.due_date.data.strftime('%Y-%m-%dT%H:%M') if form.due_date.data else '' }}">
+                                {% if form.due_date.errors %}
+                                <div class="invalid-feedback">{{ form.due_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select {% if form.priority.errors %}is-invalid{% endif %}" 
+                                        id="priority" name="priority">
+                                    <option value="low" {% if form.priority.data == 'low' %}selected{% endif %}>Low</option>
+                                    <option value="medium" {% if form.priority.data == 'medium' or not form.priority.data %}selected{% endif %}>Medium</option>
+                                    <option value="high" {% if form.priority.data == 'high' %}selected{% endif %}>High</option>
+                                    <option value="critical" {% if form.priority.data == 'critical' %}selected{% endif %}>Critical</option>
+                                </select>
+                                {% if form.priority.errors %}
+                                <div class="invalid-feedback">{{ form.priority.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="assigned_to" class="form-label">Assign To</label>
+                            <select class="form-select {% if form.assigned_to.errors %}is-invalid{% endif %}" 
+                                    id="assigned_to" name="assigned_to">
+                                {% for value, label in form.assigned_to.choices %}
+                                <option value="{{ value }}" {% if form.assigned_to.data == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Optionally assign this milestone to a team member</div>
+                            {% if form.assigned_to.errors %}
+                            <div class="invalid-feedback">{{ form.assigned_to.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Create Milestone
+                            </button>
+                            <a href="{{ url_for('projects.view_milestones', project_id=project.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Set clear, achievable milestones with specific due dates</li>
+                        <li>Use priority levels to indicate urgency</li>
+                        <li>Assign milestones to team members who are responsible</li>
+                        <li>Team members will be notified when new milestones are created</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

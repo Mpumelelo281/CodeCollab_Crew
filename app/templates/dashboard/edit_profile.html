@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-pencil me-2"></i>Edit Profile</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-3">
+                            <!-- First Name -->
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">First Name</label>
+                                {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else "")) }}
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback">{{ form.first_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Last Name -->
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else "")) }}
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback">{{ form.last_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else ""), placeholder="Optional") }}
+                                {% if form.phone.errors %}
+                                <div class="invalid-feedback">{{ form.phone.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Department -->
+                            <div class="col-md-6">
+                                <label for="department" class="form-label">Department</label>
+                                {{ form.department(class="form-select" + (" is-invalid" if form.department.errors else "")) }}
+                                {% if form.department.errors %}
+                                <div class="invalid-feedback">{{ form.department.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Bio -->
+                            <div class="col-12">
+                                <label for="bio" class="form-label">Bio</label>
+                                {{ form.bio(class="form-control" + (" is-invalid" if form.bio.errors else ""), rows="4", placeholder="Tell others about yourself...") }}
+                                {% if form.bio.errors %}
+                                <div class="invalid-feedback">{{ form.bio.errors[0] }}</div>
+                                {% endif %}
+                                <div class="form-text">Max 500 characters</div>
+                            </div>
+                            
+                            <!-- Skills -->
+                            <div class="col-12">
+                                <label for="skills" class="form-label">Skills</label>
+                                {{ form.skills(class="form-control" + (" is-invalid" if form.skills.errors else ""), placeholder="Python, JavaScript, Data Science...") }}
+                                {% if form.skills.errors %}
+                                <div class="invalid-feedback">{{ form.skills.errors[0] }}</div>
+                                {% endif %}
+                                <div class="form-text">Separate skills with commas</div>
+                                
+                                <!-- Suggested Skills -->
+                                {% if all_skills %}
+                                <div class="mt-2">
+                                    <small class="text-muted">Popular skills:</small>
+                                    <div class="mt-1">
+                                        {% for skill in all_skills[:15] %}
+                                        <span class="badge bg-secondary skill-suggestion me-1 mb-1" style="cursor: pointer;" onclick="addSkill('{{ skill.name }}')">
+                                            {{ skill.name }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Profile Picture -->
+                            <div class="col-12">
+                                <label for="avatar" class="form-label">Profile Picture</label>
+                                {{ form.avatar(class="form-control" + (" is-invalid" if form.avatar.errors else "")) }}
+                                {% if form.avatar.errors %}
+                                <div class="invalid-feedback">{{ form.avatar.errors[0] }}</div>
+                                {% endif %}
+                                <div class="form-text">JPG, PNG or GIF. Max 2MB.</div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('dashboard.profile') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addSkill(skillName) {
+    const skillsInput = document.getElementById('skills');
+    const currentSkills = skillsInput.value.trim();
+    
+    if (currentSkills) {
+        // Check if skill already exists
+        const skillsList = currentSkills.split(',').map(s => s.trim().toLowerCase());
+        if (!skillsList.includes(skillName.toLowerCase())) {
+            skillsInput.value = currentSkills + ', ' + skillName;
+        }
+    } else {
+        skillsInput.value = skillName;
+    }
+}
+</script>
+{% endblock %}

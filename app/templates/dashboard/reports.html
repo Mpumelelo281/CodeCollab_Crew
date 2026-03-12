@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <h1 class="page-title">Reports</h1>
+        <p class="page-subtitle">View detailed reports on project progress and student engagement</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Report Cards -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-folder2-open display-4 text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Project Reports</h5>
+                    <p class="card-text text-muted">View project participation and completion reports for all your projects.</p>
+                    <a href="{{ url_for('dashboard.project_reports') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right me-1"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-people display-4 text-success"></i>
+                    </div>
+                    <h5 class="card-title">Engagement Reports</h5>
+                    <p class="card-text text-muted">Analyze student engagement levels and activity across your projects.</p>
+                    <a href="{{ url_for('dashboard.engagement_reports') }}" class="btn btn-success">
+                        <i class="bi bi-arrow-right me-1"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-graph-up display-4 text-info"></i>
+                    </div>
+                    <h5 class="card-title">Progress Overview</h5>
+                    <p class="card-text text-muted">Track milestone completions and overall progress across all projects.</p>
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-info text-white">
+                        <i class="bi bi-arrow-right me-1"></i>View Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Summary -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Quick Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <h3 class="text-primary">{{ current_user.owned_projects.count() }}</h3>
+                    <p class="text-muted mb-0">Total Projects</p>
+                </div>
+                <div class="col-md-3">
+                    <h3 class="text-success">{{ active_students|default(0) }}</h3>
+                    <p class="text-muted mb-0">Active Students</p>
+                </div>
+                <div class="col-md-3">
+                    <h3 class="text-warning">{{ pending_reviews|default(0) }}</h3>
+                    <p class="text-muted mb-0">Pending Reviews</p>
+                </div>
+                <div class="col-md-3">
+                    <h3 class="text-info">{{ avg_completion|default(0) }}%</h3>
+                    <p class="text-muted mb-0">Avg Completion</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

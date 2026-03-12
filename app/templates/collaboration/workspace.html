@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - Workspace{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title[:20] }}...</a></li>
+                    <li class="breadcrumb-item active">Workspace</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-1">{{ project.title }}</h1>
+            <p class="text-muted">Collaboration Workspace</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-info-circle me-1"></i>Project Details
+            </a>
+            {% if is_owner %}
+            <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-outline-primary">
+                <i class="bi bi-gear me-1"></i>Settings
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Progress Overview -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-2">Project Progress</h5>
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="mb-0">{{ milestones|selectattr('status', 'equalto', 'completed')|list|length }}</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="mb-0">{{ milestones|selectattr('status', 'equalto', 'in_progress')|list|length }}</h4>
+                            <small class="text-muted">In Progress</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="mb-0">{{ milestones|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Main Workspace Area -->
+        <div class="col-lg-8">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" id="workspaceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="milestones-tab" data-bs-toggle="tab" 
+                            data-bs-target="#milestones" type="button" role="tab">
+                        <i class="bi bi-flag me-1"></i>Milestones
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="contributions-tab" data-bs-toggle="tab" 
+                            data-bs-target="#contributions" type="button" role="tab">
+                        <i class="bi bi-code-slash me-1"></i>Contributions
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="files-tab" data-bs-toggle="tab" 
+                            data-bs-target="#files" type="button" role="tab">
+                        <i class="bi bi-folder me-1"></i>Files
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="updates-tab" data-bs-toggle="tab" 
+                            data-bs-target="#updates" type="button" role="tab">
+                        <i class="bi bi-chat-dots me-1"></i>Updates
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="workspaceTabContent">
+                <!-- Milestones Tab -->
+                <div class="tab-pane fade show active" id="milestones" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Project Milestones</h5>
+                            {% if is_owner %}
+                            <a href="{{ url_for('projects.create_milestone', project_id=project.id) }}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus me-1"></i>Add Milestone
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if milestones %}
+                            <div class="milestone-board">
+                                {% for milestone in milestones %}
+                                <div class="milestone-card status-{{ milestone.status }}">
+                                    <div class="milestone-header">
+                                        <span class="status-badge status-{{ milestone.status }}">
+                                            {{ milestone.status.replace('_', ' ') }}
+                                        </span>
+                                        <span class="text-muted small">
+                                            Due: {{ milestone.due_date.strftime('%b %d, %Y') }}
+                                        </span>
+                                    </div>
+                                    <h6 class="milestone-title">{{ milestone.title }}</h6>
+                                    <p class="milestone-desc text-muted small">{{ milestone.description[:100] }}...</p>
+                                    <div class="milestone-actions">
+                                        {% if milestone.status != 'completed' %}
+                                        <a href="{{ url_for('collaboration.submit_milestone', project_id=project.id, milestone_id=milestone.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">Submit Work</a>
+                                        {% endif %}
+                                        {% if is_owner %}
+                                        <a href="{{ url_for('projects.edit_milestone', project_id=project.id, milestone_id=milestone.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        {% endif %}
+                                    </div>
+                                    {% if milestone.submissions %}
+                                    <div class="milestone-submissions mt-2">
+                                        <small class="text-muted">{{ milestone.submissions|length }} submission(s)</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-flag display-4 text-muted"></i>
+                                <p class="text-muted mt-2">No milestones defined yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contributions Tab -->
+                <div class="tab-pane fade" id="contributions" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Team Contributions</h5>
+                            <a href="{{ url_for('collaboration.add_contribution', project_id=project.id) }}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus me-1"></i>Log Contribution
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if contributions %}
+                            <div class="contributions-list">
+                                {% for contribution in contributions %}
+                                <div class="contribution-item">
+                                    <div class="d-flex align-items-start">
+                                        <div class="avatar avatar-sm me-3">
+                                            {{ contribution.contributor.first_name[0] }}{{ contribution.contributor.last_name[0] }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ contribution.contributor.full_name }}</strong>
+                                                <small class="text-muted">{{ contribution.created_at.strftime('%b %d, %Y') }}</small>
+                                            </div>
+                                            <h6 class="mb-1">{{ contribution.title }}</h6>
+                                            <p class="text-muted mb-1">{{ contribution.description }}</p>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <span class="badge bg-{{ contribution.type_color }}">{{ contribution.contribution_type }}</span>
+                                                <span class="text-muted small">{{ contribution.hours_spent }} hours</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-code-slash display-4 text-muted"></i>
+                                <p class="text-muted mt-2">No contributions logged yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Files Tab -->
+                <div class="tab-pane fade" id="files" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Project Files</h5>
+                            <a href="{{ url_for('projects.upload_file', project_id=project.id) }}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-upload me-1"></i>Upload File
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if files %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Size</th>
+                                            <th>Uploaded By</th>
+                                            <th>Date</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for file in files %}
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-file-earmark me-2"></i>
+                                                {{ file.original_filename }}
+                                            </td>
+                                            <td>{{ file.file_size|filesizeformat }}</td>
+                                            <td>{{ file.uploaded_by.full_name }}</td>
+                                            <td>{{ file.uploaded_at.strftime('%b %d, %Y') }}</td>
+                                            <td>
+                                                <a href="{{ url_for('projects.download_file', project_id=project.id, file_id=file.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-folder display-4 text-muted"></i>
+                                <p class="text-muted mt-2">No files uploaded yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Updates Tab -->
+                <div class="tab-pane fade" id="updates" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Project Updates</h5>
+                            <a href="{{ url_for('collaboration.add_update', project_id=project.id) }}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus me-1"></i>Post Update
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if updates %}
+                            <div class="updates-list">
+                                {% for update in updates %}
+                                <div class="update-item mb-4 pb-4 border-bottom">
+                                    <div class="d-flex align-items-start">
+                                        <div class="avatar me-3">
+                                            {{ update.author.first_name[0] }}{{ update.author.last_name[0] }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ update.author.full_name }}</strong>
+                                                <small class="text-muted">{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                                            </div>
+                                            <h5 class="mt-2">{{ update.title }}</h5>
+                                            <div class="update-content">
+                                                {{ update.content|safe }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-chat-dots display-4 text-muted"></i>
+                                <p class="text-muted mt-2">No updates posted yet.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Team Members -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Team Members</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex align-items-center">
+                        <div class="avatar avatar-sm me-2">
+                            {{ project.owner.first_name[0] }}{{ project.owner.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>{{ project.owner.full_name }}</strong>
+                            <br><small class="text-muted">Project Owner</small>
+                        </div>
+                        <span class="badge bg-primary">Owner</span>
+                    </li>
+                    {% for member in team_members %}
+                    <li class="list-group-item d-flex align-items-center">
+                        <div class="avatar avatar-sm me-2">
+                            {{ member.user.first_name[0] }}{{ member.user.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>{{ member.user.full_name }}</strong>
+                            <br><small class="text-muted">{{ member.role }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Contribution Stats -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Contribution Stats</h5>
+                </div>
+                <div class="card-body">
+                    {% if contribution_stats %}
+                    {% for stat in contribution_stats %}
+                    <div class="contribution-stat mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>{{ stat.user.first_name }}</span>
+                            <span>{{ stat.percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" style="width: {{ stat.percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted mb-0">No contribution data yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if project.repository_url %}
+                        <a href="{{ project.repository_url }}" target="_blank" class="btn btn-outline-dark">
+                            <i class="bi bi-github me-2"></i>Repository
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('collaboration.add_contribution', project_id=project.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Log Work
+                        </a>
+                        <a href="{{ url_for('collaboration.add_update', project_id=project.id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-chat-dots me-2"></i>Post Update
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if recent_activity %}
+                    {% for activity in recent_activity %}
+                    <li class="list-group-item">
+                        <small class="text-muted">{{ activity.timestamp.strftime('%b %d, %H:%M') }}</small>
+                        <br>{{ activity.message }}
+                    </li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="list-group-item text-muted">No recent activity.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.milestone-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.milestone-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #6c757d;
+}
+
+.milestone-card.status-pending {
+    border-left-color: #6c757d;
+}
+
+.milestone-card.status-in_progress {
+    border-left-color: #0d6efd;
+}
+
+.milestone-card.status-completed {
+    border-left-color: #198754;
+}
+
+.milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.milestone-title {
+    margin-bottom: 0.5rem;
+}
+
+.milestone-desc {
+    margin-bottom: 0.75rem;
+}
+
+.milestone-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.contribution-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.contribution-item:last-child {
+    border-bottom: none;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+}
+
+.update-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+</style>
+{% endblock %}

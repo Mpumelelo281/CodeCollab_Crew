@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - ColabPlatform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">Projects</a></li>
+            <li class="breadcrumb-item active">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="status-badge status-{{ project.status }} fs-6">
+                            {{ project.status.replace('_', ' ') }}
+                        </span>
+                        {% if can_edit %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="bi bi-gear"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('projects.edit_project', project_id=project.id) }}">
+                                        <i class="bi bi-pencil me-2"></i>Edit Project
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('projects.manage_milestones', project_id=project.id) }}">
+                                        <i class="bi bi-flag me-2"></i>Manage Milestones
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('projects.manage_files', project_id=project.id) }}">
+                                        <i class="bi bi-folder me-2"></i>Manage Files
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" 
+                                       data-bs-target="#deleteProjectModal">
+                                        <i class="bi bi-trash me-2"></i>Delete Project
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h1 class="h2 mb-3">{{ project.title }}</h1>
+                    
+                    <div class="d-flex flex-wrap gap-3 mb-4 text-muted">
+                        <span><i class="bi bi-person me-1"></i>{{ project.owner.full_name }}</span>
+                        {% if project.get_department() %}
+                        <span><i class="bi bi-building me-1"></i>{{ project.get_department().name }}</span>
+                        {% endif %}
+                        <span><i class="bi bi-calendar me-1"></i>Created {{ project.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    
+                    <h5>Description</h5>
+                    <div class="mb-4">
+                        {{ project.description|safe }}
+                    </div>
+                    
+                    {% if project.objectives %}
+                    <h5>Objectives</h5>
+                    <div class="mb-4">
+                        {{ project.objectives|safe }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if project.deliverables %}
+                    <h5>Expected Deliverables</h5>
+                    <div class="mb-4">
+                        {{ project.deliverables|safe }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Milestones -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Milestones</h5>
+                    {% if can_edit %}
+                    <a href="{{ url_for('projects.manage_milestones', project_id=project.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> Add
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if milestones %}
+                    <div class="milestone-timeline">
+                        {% for milestone in milestones %}
+                        <div class="milestone-item {% if milestone.status == 'completed' %}completed{% endif %}">
+                            <div class="milestone-marker">
+                                {% if milestone.status == 'completed' %}
+                                <i class="bi bi-check-circle-fill"></i>
+                                {% elif milestone.status == 'in_progress' %}
+                                <i class="bi bi-circle-half"></i>
+                                {% else %}
+                                <i class="bi bi-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div class="milestone-content">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="mb-1">{{ milestone.title }}</h6>
+                                    <span class="status-badge status-{{ milestone.status }} small">
+                                        {{ milestone.status.replace('_', ' ') }}
+                                    </span>
+                                </div>
+                                <p class="text-muted small mb-2">{{ milestone.description }}</p>
+                                <div class="text-muted small">
+                                    <i class="bi bi-calendar me-1"></i>
+                                    Due: {{ milestone.due_date.strftime('%b %d, %Y') }}
+                                </div>
+                                {% if is_member and milestone.status != 'completed' %}
+                                <a href="{{ url_for('collaboration.submit_milestone', project_id=project.id, milestone_id=milestone.id) }}" 
+                                   class="btn btn-sm btn-outline-primary mt-2">
+                                    Submit Work
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No milestones defined yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Updates/Activity -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-activity me-2"></i>Recent Updates</h5>
+                    {% if is_member %}
+                    <a href="{{ url_for('collaboration.add_update', project_id=project.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> Post Update
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if updates %}
+                    {% for update in updates %}
+                    <div class="update-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-start">
+                            <div class="avatar avatar-sm me-3">
+                                {{ update.author.first_name[0] }}{{ update.author.last_name[0] }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ update.author.full_name }}</strong>
+                                    <small class="text-muted">{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                                </div>
+                                <h6 class="mb-1">{{ update.title }}</h6>
+                                <p class="mb-0 text-muted">{{ update.content[:200] }}{% if update.content|length > 200 %}...{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted mb-0">No updates posted yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Progress Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Project Progress</h5>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%"></div>
+                    </div>
+                    <div class="text-center text-muted">{{ project.progress }}% Complete</div>
+                </div>
+            </div>
+            
+            <!-- Key Dates -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Key Dates</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if project.start_date %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Start Date</span>
+                        <span class="text-muted">{{ project.start_date.strftime('%b %d, %Y') }}</span>
+                    </li>
+                    {% endif %}
+                    {% if project.end_date %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>End Date</span>
+                        <span class="text-muted">{{ project.end_date.strftime('%b %d, %Y') }}</span>
+                    </li>
+                    {% endif %}
+                    {% if project.application_deadline %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Application Deadline</span>
+                        <span class="{% if project.application_deadline < now %}text-danger{% else %}text-muted{% endif %}">
+                            {{ project.application_deadline.strftime('%b %d, %Y') }}
+                        </span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <!-- Required Skills -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Required Skills</h5>
+                </div>
+                <div class="card-body">
+                    {% if project.skills %}
+                    {% for skill in project.skills %}
+                    <span class="skill-tag">{{ skill.name }}</span>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted mb-0">No specific skills required.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Tools -->
+            {% if project.tools %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Tools & Technologies</h5>
+                </div>
+                <div class="card-body">
+                    {% for tool in project.tools %}
+                    <span class="tool-tag">{{ tool.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Team -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Team ({{ team_count }} members)</h5>
+                    {% if can_edit %}
+                    <a href="{{ url_for('projects.manage_team', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                        Manage
+                    </a>
+                    {% endif %}
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex align-items-center">
+                        <div class="avatar avatar-sm me-2">
+                            {{ project.owner.first_name[0] }}{{ project.owner.last_name[0] }}
+                        </div>
+                        <div>
+                            <strong>{{ project.owner.full_name }}</strong>
+                            <br><small class="text-muted">Project Owner</small>
+                        </div>
+                    </li>
+                    {% for member in team_members %}
+                    <li class="list-group-item d-flex align-items-center">
+                        <div class="avatar avatar-sm me-2">
+                            {{ member.user.first_name[0] }}{{ member.user.last_name[0] }}
+                        </div>
+                        <div>
+                            <strong>{{ member.user.full_name }}</strong>
+                            <br><small class="text-muted">{{ member.role }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Collaboration Tools (for members and owner) -->
+            {% if is_member or can_edit %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Collaboration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('projects.view_tasks', project_id=project.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-task me-2"></i>Tasks
+                        </a>
+                        <a href="{{ url_for('projects.view_team', project_id=project.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-people me-2"></i>Team Members
+                        </a>
+                        {% if can_edit %}
+                        <a href="{{ url_for('projects.invite_members', project_id=project.id) }}" class="btn btn-outline-success">
+                            <i class="bi bi-person-plus me-2"></i>Invite Members
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% if can_edit and project.invite_code %}
+                    <hr>
+                    <label class="form-label small text-muted">Share Link</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="shareLink" 
+                               value="{{ url_for('projects.join_via_link', invite_code=project.invite_code, _external=True) }}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Apply Button -->
+            {% if can_apply %}
+            <div class="d-grid mb-4">
+                <a href="{{ url_for('projects.apply_project', project_id=project.id) }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-send me-2"></i>Apply to Join
+                </a>
+            </div>
+            {% elif has_applied %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Your application is pending review.
+            </div>
+            {% elif is_member %}
+            <div class="d-grid mb-4">
+                <a href="{{ url_for('collaboration.project_workspace', project_id=project.id) }}" class="btn btn-success btn-lg">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Go to Workspace
+                </a>
+            </div>
+            {% endif %}
+            
+            <!-- Files -->
+            {% if project_files %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Files</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for file in project_files[:5] %}
+                    <li class="list-group-item">
+                        <a href="{{ url_for('projects.download_file', project_id=project.id, file_id=file.id) }}" 
+                           class="text-decoration-none">
+                            <i class="bi bi-file-earmark me-2"></i>{{ file.original_filename }}
+                        </a>
+                        <small class="text-muted d-block">{{ file.file_size|filesizeformat }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if project_files|length > 5 %}
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('projects.manage_files', project_id=project.id) }}">View all files</a>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+{% if can_edit %}
+<div class="modal fade" id="deleteProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this project? This action cannot be undone.</p>
+                <p class="text-danger"><strong>All milestones, files, and contributions will be permanently deleted.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('projects.delete_project', project_id=project.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete Project</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.milestone-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.milestone-item {
+    position: relative;
+    padding-bottom: 20px;
+    border-left: 2px solid #dee2e6;
+    padding-left: 20px;
+    margin-left: 8px;
+}
+
+.milestone-item:last-child {
+    border-left: 2px solid transparent;
+}
+
+.milestone-item.completed {
+    border-left-color: var(--bs-success);
+}
+
+.milestone-marker {
+    position: absolute;
+    left: -10px;
+    top: 0;
+    background: white;
+    font-size: 1.2rem;
+}
+
+.milestone-item.completed .milestone-marker {
+    color: var(--bs-success);
+}
+
+.tool-tag {
+    display: inline-block;
+    background: var(--bs-info-bg-subtle);
+    color: var(--bs-info);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin: 0.25rem;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+function copyShareLink() {
+    const linkInput = document.getElementById('shareLink');
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(linkInput.value).then(function() {
+        // Show tooltip or change button
+        const btn = linkInput.nextElementSibling;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i>';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

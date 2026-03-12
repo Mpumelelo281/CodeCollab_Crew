@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Grade {{ student.full_name }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.grading_overview') }}">Grading</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.grade_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                <li class="breadcrumb-item active">{{ student.full_name }}</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Grade {{ student.full_name }}</h1>
+        <p class="page-subtitle">{{ project.title }}</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Grading Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-mortarboard me-2"></i>Assign Grade</h5>
+                </div>
+                <div class="card-body">
+                    {% if existing_grade and existing_grade.is_final %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-lock me-2"></i>
+                        This grade has been finalized and cannot be changed. Contact an administrator if you need to modify it.
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('dashboard.grade_student', project_id=project.id, student_id=student.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- Overall Grade -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Overall Grade (%)</label>
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <input type="range" class="form-range" id="gradeSlider" name="grade" 
+                                           min="0" max="100" step="1" 
+                                           value="{{ existing_grade.grade if existing_grade else 75 }}"
+                                           {% if existing_grade and existing_grade.is_final %}disabled{% endif %}
+                                           oninput="updateGradeDisplay(this.value)">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" id="gradeInput" 
+                                           min="0" max="100" step="0.5"
+                                           value="{{ existing_grade.grade if existing_grade else 75 }}"
+                                           {% if existing_grade and existing_grade.is_final %}disabled{% endif %}
+                                           oninput="document.getElementById('gradeSlider').value = this.value; updateGradeDisplay(this.value)">
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <span id="letterGrade" class="badge bg-primary fs-5">
+                                        {{ existing_grade.letter_grade if existing_grade else 'B+' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grade Components -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Contribution Score (0-100)</label>
+                                <input type="number" class="form-control" name="contribution_score" 
+                                       min="0" max="100" step="0.5"
+                                       value="{{ existing_grade.contribution_score if existing_grade and existing_grade.contribution_score else '' }}"
+                                       placeholder="Based on number and quality of contributions"
+                                       {% if existing_grade and existing_grade.is_final %}disabled{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quality Score (0-100)</label>
+                                <input type="number" class="form-control" name="quality_score" 
+                                       min="0" max="100" step="0.5"
+                                       value="{{ existing_grade.quality_score if existing_grade and existing_grade.quality_score else '' }}"
+                                       placeholder="Code/work quality"
+                                       {% if existing_grade and existing_grade.is_final %}disabled{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Teamwork Score (0-100)</label>
+                                <input type="number" class="form-control" name="teamwork_score" 
+                                       min="0" max="100" step="0.5"
+                                       value="{{ existing_grade.teamwork_score if existing_grade and existing_grade.teamwork_score else '' }}"
+                                       placeholder="Team collaboration"
+                                       {% if existing_grade and existing_grade.is_final %}disabled{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Timeliness Score (0-100)</label>
+                                <input type="number" class="form-control" name="timeliness_score" 
+                                       min="0" max="100" step="0.5"
+                                       value="{{ existing_grade.timeliness_score if existing_grade and existing_grade.timeliness_score else '' }}"
+                                       placeholder="Meeting deadlines"
+                                       {% if existing_grade and existing_grade.is_final %}disabled{% endif %}>
+                            </div>
+                        </div>
+
+                        <!-- Feedback -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Feedback</label>
+                            <textarea class="form-control" name="feedback" rows="5" 
+                                      placeholder="Provide detailed feedback to the student..."
+                                      {% if existing_grade and existing_grade.is_final %}disabled{% endif %}>{{ existing_grade.feedback if existing_grade else '' }}</textarea>
+                        </div>
+
+                        <!-- Finalize Option -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="isFinal" name="is_final"
+                                       {% if existing_grade and existing_grade.is_final %}checked disabled{% endif %}>
+                                <label class="form-check-label" for="isFinal">
+                                    <strong>Finalize Grade</strong>
+                                    <br><small class="text-muted">Once finalized, the grade cannot be changed. The student will be notified.</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if not (existing_grade and existing_grade.is_final) %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>Save Grade
+                            </button>
+                            <a href="{{ url_for('dashboard.grade_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                        {% else %}
+                        <a href="{{ url_for('dashboard.grade_project', project_id=project.id) }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Project
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Info & Contributions -->
+        <div class="col-lg-4">
+            <!-- Student Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Student Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar avatar-lg me-3">
+                            {{ student.first_name[0] }}{{ student.last_name[0] }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ student.full_name }}</h6>
+                            <small class="text-muted">{{ student.email }}</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="mb-0 text-primary">{{ contributions|length }}</h4>
+                            <small class="text-muted">Contributions</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="mb-0 text-info">{{ contributions|sum(attribute='hours_spent')|default(0)|round(1) }}</h4>
+                            <small class="text-muted">Hours</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <small class="text-muted">
+                        <strong>Joined:</strong> {{ membership.joined_at.strftime('%B %d, %Y') }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Contribution History -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Contributions</h5>
+                    <span class="badge bg-secondary">{{ contributions|length }}</span>
+                </div>
+                <ul class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% for contrib in contributions %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-{{ 'primary' if contrib.contribution_type == 'code' else 'info' if contrib.contribution_type == 'documentation' else 'success' if contrib.contribution_type == 'design' else 'warning' if contrib.contribution_type == 'research' else 'secondary' }} mb-1">
+                                    {{ contrib.contribution_type|default('general')|title }}
+                                </span>
+                                <p class="mb-1 small">{{ contrib.description[:100] }}{% if contrib.description|length > 100 %}...{% endif %}</p>
+                                {% if contrib.hours_spent %}
+                                <small class="text-muted">{{ contrib.hours_spent }} hours</small>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ contrib.created_at.strftime('%b %d') }}</small>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted text-center py-4">
+                        No contributions recorded.
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateGradeDisplay(value) {
+    document.getElementById('gradeInput').value = value;
+    
+    // Calculate letter grade
+    let letter;
+    if (value >= 90) letter = 'A+';
+    else if (value >= 80) letter = 'A';
+    else if (value >= 75) letter = 'B+';
+    else if (value >= 70) letter = 'B';
+    else if (value >= 65) letter = 'C+';
+    else if (value >= 60) letter = 'C';
+    else if (value >= 55) letter = 'D+';
+    else if (value >= 50) letter = 'D';
+    else letter = 'F';
+    
+    const badge = document.getElementById('letterGrade');
+    badge.textContent = letter;
+    
+    // Update badge color
+    badge.className = 'badge fs-5 ';
+    if (value >= 75) badge.className += 'bg-success';
+    else if (value >= 60) badge.className += 'bg-primary';
+    else if (value >= 50) badge.className += 'bg-warning';
+    else badge.className += 'bg-danger';
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateGradeDisplay(document.getElementById('gradeSlider').value);
+});
+</script>
+{% endblock %}

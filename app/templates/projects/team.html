@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Team - {{ project.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.my_projects') }}">My Projects</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                <li class="breadcrumb-item active">Team</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Team Members</h1>
+                <p class="page-subtitle">{{ project.team_count + 1 }} members</p>
+            </div>
+            {% if project.owner_id == current_user.id %}
+            <a href="{{ url_for('projects.invite_members', project_id=project.id) }}" class="btn btn-primary">
+                <i class="bi bi-person-plus me-2"></i>Invite Members
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Team Members Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Current Team</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Project Owner -->
+                    <div class="d-flex align-items-center p-3 mb-3 border rounded bg-light">
+                        <div class="avatar avatar-lg me-3 bg-primary text-white">
+                            {{ project.owner.first_name[0] }}{{ project.owner.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ project.owner.full_name }}</h6>
+                            <small class="text-muted">{{ project.owner.email }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary mb-1">Owner</span>
+                            <br>
+                            <span class="badge bg-{{ 'success' if project.owner.availability_status == 'available' else 'warning' if project.owner.availability_status == 'busy' else 'secondary' }}">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                {{ project.owner.availability_status|capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Members -->
+                    {% for member in members %}
+                    <div class="d-flex align-items-center p-3 mb-2 border rounded">
+                        <div class="avatar avatar-lg me-3">
+                            {{ member.user.first_name[0] }}{{ member.user.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ member.user.full_name }}</h6>
+                            <small class="text-muted">{{ member.user.email }}</small>
+                            <br>
+                            <small class="text-muted">Joined {{ member.joined_at.strftime('%b %d, %Y') }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary mb-1">{{ member.role|capitalize }}</span>
+                            <br>
+                            <span class="badge bg-{{ 'success' if member.user.availability_status == 'available' else 'warning' if member.user.availability_status == 'busy' else 'secondary' }}">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                {{ member.user.availability_status|capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-people fs-1 mb-2 d-block"></i>
+                        <p>No team members yet. Invite collaborators to get started!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Pending Invitations -->
+            {% if project.owner_id == current_user.id and pending_invitations %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Pending Invitations</h5>
+                </div>
+                <div class="card-body">
+                    {% for invitation in pending_invitations %}
+                    <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                        <div class="avatar me-2">
+                            {{ invitation.invited_user.first_name[0] }}{{ invitation.invited_user.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold">{{ invitation.invited_user.full_name }}</small>
+                            <br>
+                            <small class="text-muted">Sent {{ invitation.created_at.strftime('%b %d') }}</small>
+                        </div>
+                        <span class="badge bg-warning">Pending</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Share Link -->
+            {% if project.owner_id == current_user.id %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Invite Link</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Share this link to invite people:</p>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="inviteLink" 
+                               value="{{ url_for('projects.join_via_link', invite_code=project.invite_code, _external=True) }}" 
+                               readonly>
+                        <button class="btn btn-outline-primary" type="button" onclick="copyInviteLink()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Invite -->
+            {% if project.owner_id == current_user.id and available_users %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Quick Invite</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projects.invite_members', project_id=project.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-2">
+                            <select name="user_ids" class="form-select form-select-sm" required>
+                                <option value="">Select user...</option>
+                                {% for user in available_users[:10] %}
+                                <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-send me-1"></i>Send Invite
+                        </button>
+                    </form>
+                    <a href="{{ url_for('projects.invite_members', project_id=project.id) }}" class="btn btn-link btn-sm w-100 mt-2">
+                        View all users →
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyInviteLink() {
+    const linkInput = document.getElementById('inviteLink');
+    linkInput.select();
+    document.execCommand('copy');
+    alert('Invite link copied!');
+}
+</script>
+{% endblock %}

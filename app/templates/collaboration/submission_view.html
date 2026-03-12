@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Review Submission - {{ submission.milestone.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.my_projects') }}">My Projects</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_milestones', project_id=project.id) }}">Milestones</a></li>
+                <li class="breadcrumb-item active">Review Submission</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">{{ submission.milestone.title }}</h1>
+                <p class="page-subtitle">Submitted by {{ submission.submitted_by.full_name }}</p>
+            </div>
+            <span class="badge bg-{{ 'success' if submission.status == 'approved' else 'danger' if submission.status == 'rejected' else 'warning' }} fs-6">
+                {{ submission.status|title }}
+            </span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Submission Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-file-text me-2"></i>Submission Content</h5>
+                </div>
+                <div class="card-body">
+                    <div class="submission-content">
+                        {{ submission.content|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attached Files -->
+            {% if submission.files.count() > 0 %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Attached Files</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for file in submission.files %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-file-earmark me-2"></i>
+                            {{ file.original_filename }}
+                            <br><small class="text-muted">{{ (file.file_size / 1024)|round(1) }} KB</small>
+                        </div>
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Review Form (for project owner, if pending) -->
+            {% if project.owner_id == current_user.id and submission.status == 'pending' %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Review Submission</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('collaboration.review_submission', project_id=project.id, submission_id=submission.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Feedback</label>
+                            <textarea name="feedback" class="form-control" rows="4" placeholder="Provide feedback to the student..."></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>Approve
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                <i class="bi bi-x-lg me-1"></i>Request Revision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Previous Feedback (if reviewed) -->
+            {% if submission.status != 'pending' and submission.feedback %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Feedback</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">{{ submission.feedback }}</p>
+                    <small class="text-muted">
+                        Reviewed by {{ submission.reviewed_by.full_name if submission.reviewed_by else 'Unknown' }}
+                        on {{ submission.reviewed_at.strftime('%b %d, %Y at %H:%M') if submission.reviewed_at else 'N/A' }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Submission Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Submission Details</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Submitted by</span>
+                        <strong>{{ submission.submitted_by.full_name }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Submitted on</span>
+                        <strong>{{ submission.submitted_at.strftime('%b %d, %Y') }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Milestone Due</span>
+                        <strong>{{ submission.milestone.due_date.strftime('%b %d, %Y') }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Status</span>
+                        <span class="badge bg-{{ 'success' if submission.status == 'approved' else 'danger' if submission.status == 'rejected' else 'warning' }}">
+                            {{ submission.status|title }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Milestone Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Milestone</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ submission.milestone.title }}</h6>
+                    <p class="text-muted mb-2">{{ submission.milestone.description or 'No description' }}</p>
+                    <span class="badge bg-{{ 'success' if submission.milestone.status == 'completed' else 'primary' if submission.milestone.status == 'in_progress' else 'secondary' }}">
+                        {{ submission.milestone.status|replace('_', ' ')|title }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

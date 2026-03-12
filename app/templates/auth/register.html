@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Register - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary">Create Account</h2>
+                        <p class="text-muted">Join the collaboration platform</p>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('auth.register') }}" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                {{ form.first_name(class="form-control", placeholder="Mpumelelo", required=true) }}
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.first_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                {{ form.last_name(class="form-control", placeholder="Ngobese", required=true) }}
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.last_name.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Institutional Email</label>
+                            {{ form.email(class="form-control", placeholder="your.email@dut.ac.za", required=true) }}
+                            <div class="form-text">Use your Durban University of Technology email address</div>
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">I am a</label>
+                                {{ form.role(class="form-select", required=true) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="institution_id" class="form-label">Student/Employee ID</label>
+                                {{ form.institution_id(class="form-control", placeholder="STU123456", required=true) }}
+                                {% if form.institution_id.errors %}
+                                <div class="invalid-feedback d-block">{{ form.institution_id.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department</label>
+                            {{ form.department(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            {{ form.password(class="form-control", placeholder="Create a strong password", required=true, **{'data-strength': 'passwordStrength'}) }}
+                            <div class="progress mt-2" style="height: 4px;" id="passwordStrength">
+                                <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                            <div class="form-text">
+                                Must be 8+ characters with uppercase, lowercase, number, and special character
+                            </div>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            {{ form.confirm_password(class="form-control", placeholder="Confirm your password", required=true) }}
+                            {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback d-block">{{ form.confirm_password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.agree_terms(class="form-check-input", required=true) }}
+                                <label class="form-check-label" for="agree_terms">
+                                    I agree to the <a href="{{ url_for('main.terms') }}" target="_blank">Terms of Service</a> 
+                                    and <a href="{{ url_for('main.privacy') }}" target="_blank">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-person-plus me-2"></i>Create Account
+                        </button>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="text-center mb-0">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="fw-semibold">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

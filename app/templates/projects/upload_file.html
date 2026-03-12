@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Upload File - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</a></li>
+                <li class="breadcrumb-item active">Upload File</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Upload File</h1>
+        <p class="page-subtitle">Share files with your project team</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Upload New File</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('projects.upload_file', project_id=project.id) }}" 
+                          method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select File <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="file" name="file" required>
+                            <div class="form-text">
+                                Allowed file types: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, PNG, JPG, GIF
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Brief description of the file (optional)"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-2"></i>Upload File
+                            </button>
+                            <a href="{{ url_for('projects.view_files', project_id=project.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Files
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Upload Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>If you upload a file with the same name, it will create a new version</li>
+                        <li>Large files may take longer to upload</li>
+                        <li>Add a description to help team members understand the file's purpose</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

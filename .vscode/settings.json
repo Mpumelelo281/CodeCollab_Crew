@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.html": "jinja-html"
+    },
+    "css.validate": false,
+    "[jinja-html]": {
+        "editor.suggest.insertMode": "replace"
+    }
+}

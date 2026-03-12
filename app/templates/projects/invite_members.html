@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Invite Members - {{ project.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.my_projects') }}">My Projects</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                <li class="breadcrumb-item active">Invite Members</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Invite Members</h1>
+        <p class="page-subtitle">Invite collaborators to join "{{ project.title }}"</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Share Link Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Share Invite Link</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Share this link with anyone to invite them to your project:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="inviteLink" 
+                               value="{{ url_for('projects.join_via_link', invite_code=project.invite_code, _external=True) }}" 
+                               readonly>
+                        <button class="btn btn-outline-primary" type="button" onclick="copyInviteLink()">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                    <form action="{{ url_for('projects.regenerate_invite_code', project_id=project.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" 
+                                onclick="return confirm('This will invalidate the current invite link. Continue?')">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Regenerate Link
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direct Invite Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Direct Invite</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projects.invite_members', project_id=project.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Users to Invite</label>
+                            <select name="user_ids" class="form-select" multiple size="5" required>
+                                {% for user in available_users %}
+                                <option value="{{ user.id }}">
+                                    {{ user.full_name }} ({{ user.email }})
+                                    {% if user.availability_status == 'available' %}✓{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Hold Ctrl/Cmd to select multiple users</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Invitation Message (Optional)</label>
+                            <textarea name="message" id="message" class="form-control" rows="3" 
+                                      placeholder="Add a personal message to your invitation..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-2"></i>Send Invitations
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Team -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-people me-2"></i>Current Team ({{ project.team_count }} members)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Project Owner -->
+                <div class="col-md-4 col-lg-3">
+                    <div class="d-flex align-items-center p-3 border rounded bg-light">
+                        <div class="avatar me-3 bg-primary text-white">
+                            {{ project.owner.first_name[0] }}{{ project.owner.last_name[0] }}
+                        </div>
+                        <div>
+                            <strong>{{ project.owner.full_name }}</strong>
+                            <br><span class="badge bg-primary">Owner</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Team Members -->
+                {% for member in project.members.filter_by(status='active').all() %}
+                <div class="col-md-4 col-lg-3">
+                    <div class="d-flex align-items-center p-3 border rounded">
+                        <div class="avatar me-3">
+                            {{ member.user.first_name[0] }}{{ member.user.last_name[0] }}
+                        </div>
+                        <div>
+                            <strong>{{ member.user.full_name }}</strong>
+                            <br><span class="badge bg-secondary">{{ member.role }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyInviteLink() {
+    const linkInput = document.getElementById('inviteLink');
+    linkInput.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-success');
+    
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    }, 2000);
+}
+</script>
+{% endblock %}
