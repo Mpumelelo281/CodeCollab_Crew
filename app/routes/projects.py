@@ -143,24 +143,61 @@ def view_project(project_id):
     
     # Check if user can edit the project (owner or admin)
     can_edit = False
+    is_lecturer_viewer = False
     if current_user.is_authenticated:
         can_edit = (project.owner_id == current_user.id) or current_user.is_admin
+        is_lecturer_viewer = (current_user.is_lecturer and 
+                              current_user.department_id is not None and 
+                              current_user.department_id == project.department_id)
+    
+    # Can apply check
+    can_apply = False
+    if current_user.is_authenticated and current_user.is_student:
+        can_apply = project.is_accepting_applications and not has_applied and not is_member and project.owner_id != current_user.id
+    
+    # Get team members
+    team_members = project.members.filter_by(status='active').all()
+    
+    # Get milestones
+    milestones = project.milestones.all()
+    
+    # Get recent updates with author info
+    updates = project.updates.limit(10).all()
+    
+    # Get recent contributions (who did what)
+    recent_contributions = Contribution.query.filter_by(project_id=project_id)\
+        .order_by(Contribution.created_at.desc()).limit(10).all()
+    
+    # Get project files
+    project_files = project.files.filter_by(is_current=True)\
+        .order_by(ProjectFile.uploaded_at.desc()).all()
     
     return render_template('projects/view.html',
                          project=project,
                          has_applied=has_applied,
                          is_member=is_member,
                          can_edit=can_edit,
+                         can_apply=can_apply,
+                         is_lecturer_viewer=is_lecturer_viewer,
                          user_application=user_application,
                          member_count=member_count,
                          milestone_count=milestone_count,
-                         completed_milestones=completed_milestones)
+                         completed_milestones=completed_milestones,
+                         team_members=team_members,
+                         milestones=milestones,
+                         updates=updates,
+                         recent_contributions=recent_contributions,
+                         project_files=project_files,
+                         team_count=member_count)
 
 
 @projects_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_project():
-    """Create a new project. Both students and lecturers can create projects."""
+    """Create a new project. Only students can create projects."""
+    if current_user.is_lecturer and not current_user.is_admin:
+        flash('Only students can create projects. As a lecturer, you can view and monitor student projects.', 'info')
+        return redirect(url_for('dashboard.index'))
     form = ProjectForm()
     
     # Populate choices

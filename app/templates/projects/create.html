@@ -16,10 +16,7 @@
         <p class="page-subtitle">Define your project details and requirements</p>
     </div>
     
-    <div class="alert alert-info mb-4">
-        <i class="bi bi-lightbulb me-2"></i>
-        <strong>Tip:</strong> After creating your project, you can invite team members using a shareable link or by searching for users directly from your project page.
-    </div>
+    <!-- Project workflow steps removed per user request -->
 
     <form method="POST" action="{{ url_for('projects.create_project') }}" class="needs-validation" novalidate>
         {{ form.hidden_tag() }}
@@ -43,11 +40,11 @@
                         
                         <div class="mb-3">
                             <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
-                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="5", placeholder="Provide a detailed description of your project (minimum 50 characters)") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="5", placeholder="Describe your project, its purpose, and what you aim to achieve") }}
                             {% if form.description.errors %}
                             <div class="invalid-feedback">{{ form.description.errors[0] }}</div>
                             {% endif %}
-                            <div class="form-text">Minimum 50 characters required</div>
+                            <div class="form-text">Provide a clear and detailed project description</div>
                         </div>
                         
                         <div class="mb-3">

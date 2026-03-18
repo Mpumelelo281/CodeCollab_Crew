@@ -164,14 +164,80 @@
                                     <strong>{{ update.author.full_name }}</strong>
                                     <small class="text-muted">{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</small>
                                 </div>
+                                <span class="badge bg-{{ 'primary' if update.update_type == 'announcement' else 'success' if update.update_type == 'milestone' else 'info' if update.update_type == 'progress' else 'secondary' }} mb-1">
+                                    {{ update.update_type|capitalize }}
+                                </span>
                                 <h6 class="mb-1">{{ update.title }}</h6>
                                 <p class="mb-0 text-muted">{{ update.content[:200] }}{% if update.content|length > 200 %}...{% endif %}</p>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
+                    {% if is_member or is_lecturer_viewer %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('collaboration.updates', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                            View All Updates
+                        </a>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <p class="text-muted mb-0">No updates posted yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Who Did What - Contributions Log -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-code-slash me-2"></i>Contributions - Who Did What</h5>
+                    {% if is_member %}
+                    <a href="{{ url_for('collaboration.add_contribution', project_id=project.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> Log Contribution
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if recent_contributions %}
+                    {% for contrib in recent_contributions %}
+                    <div class="contribution-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-start">
+                            <div class="avatar avatar-sm me-3">
+                                {{ contrib.contributor.first_name[0] }}{{ contrib.contributor.last_name[0] }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ contrib.contributor.full_name }}</strong>
+                                    <small class="text-muted">{{ contrib.created_at.strftime('%b %d, %Y') }}</small>
+                                </div>
+                                {% if contrib.title %}
+                                <h6 class="mb-1 mt-1">{{ contrib.title }}</h6>
+                                {% endif %}
+                                <p class="mb-1 text-muted small">{{ contrib.description[:150] }}{% if contrib.description|length > 150 %}...{% endif %}</p>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="badge bg-{{ 'primary' if contrib.contribution_type == 'code' else 'info' if contrib.contribution_type == 'documentation' else 'success' if contrib.contribution_type == 'design' else 'warning' if contrib.contribution_type == 'research' else 'secondary' }}">
+                                        {{ contrib.contribution_type|default('general')|title }}
+                                    </span>
+                                    {% if contrib.hours_spent %}
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ contrib.hours_spent }}h</small>
+                                    {% endif %}
+                                    {% if contrib.milestone %}
+                                    <small class="text-info"><i class="bi bi-flag me-1"></i>{{ contrib.milestone.title }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if is_member or is_lecturer_viewer %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('collaboration.contributions', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                            View All Contributions
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted mb-0">No contributions logged yet. Team members can log their work to track progress.</p>
                     {% endif %}
                 </div>
             </div>
@@ -283,8 +349,8 @@
                 </ul>
             </div>
             
-            <!-- Collaboration Tools (for members and owner) -->
-            {% if is_member or can_edit %}
+            <!-- Collaboration Tools (for members, owner, and lecturers) -->
+            {% if is_member or can_edit or is_lecturer_viewer %}
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Collaboration</h5>
@@ -334,6 +400,12 @@
             <div class="d-grid mb-4">
                 <a href="{{ url_for('collaboration.project_workspace', project_id=project.id) }}" class="btn btn-success btn-lg">
                     <i class="bi bi-box-arrow-in-right me-2"></i>Go to Workspace
+                </a>
+            </div>
+            {% elif is_lecturer_viewer %}
+            <div class="d-grid mb-4">
+                <a href="{{ url_for('collaboration.project_workspace', project_id=project.id) }}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-eye me-2"></i>View Workspace
                 </a>
             </div>
             {% endif %}

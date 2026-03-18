@@ -108,7 +108,7 @@ def project_owner_required(f):
 
 def project_member_required(f):
     """
-    Decorator to require user to be a project member or owner.
+    Decorator to require user to be a project member, owner, or lecturer in the same department.
     Expects 'project_id' in URL parameters.
     """
     @wraps(f)
@@ -129,6 +129,11 @@ def project_member_required(f):
         
         # Check if admin
         if current_user.is_admin:
+            return f(*args, **kwargs)
+        
+        # Check if lecturer in same department (read-only monitoring)
+        if current_user.is_lecturer and current_user.department_id and \
+           current_user.department_id == project.department_id:
             return f(*args, **kwargs)
         
         # Check if active member

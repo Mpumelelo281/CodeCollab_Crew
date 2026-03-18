@@ -1,0 +1,14 @@
+Hello {{ user.first_name }},
+
+Welcome to ColabPlatform!
+
+Please verify your email address by visiting the link below:
+
+{{ verify_url }}
+
+This link will expire in 24 hours.
+
+If you did not create an account, you can ignore this email.
+
+Best regards,
+The ColabPlatform Team

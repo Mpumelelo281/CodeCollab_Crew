@@ -51,7 +51,7 @@
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>Total Contributions</span>
-                        <strong>{{ student_projects|sum(attribute='contributions')|length if student_projects else 0 }}</strong>
+                        <strong>{{ student_projects|map(attribute='contributions')|map('length')|sum if student_projects else 0 }}</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>Total Hours</span>
@@ -69,12 +69,23 @@
                     <div>
                         <h5 class="mb-0">{{ project_data.project.title }}</h5>
                         <small class="text-muted">
+                            {% if project_data.get('is_owner') %}
+                            <span class="badge bg-primary me-1">Owner</span>
+                            Created {{ project_data.project.created_at.strftime('%b %d, %Y') }}
+                            {% elif project_data.membership %}
                             Joined {{ project_data.membership.joined_at.strftime('%b %d, %Y') if project_data.membership.joined_at else 'N/A' }}
+                            {% endif %}
                         </small>
                     </div>
-                    <span class="status-badge status-{{ project_data.project.status }}">
-                        {{ project_data.project.status.replace('_', ' ') }}
-                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <a href="{{ url_for('projects.view_project', project_id=project_data.project.id) }}" 
+                           class="btn btn-sm btn-outline-secondary" title="View Project">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <span class="status-badge status-{{ project_data.project.status }}">
+                            {{ project_data.project.status.replace('_', ' ') }}
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <!-- Progress -->
@@ -90,19 +101,25 @@
                     
                     <!-- Contribution Stats -->
                     <div class="row g-3 mb-4">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="border rounded p-3 text-center">
                                 <h4 class="mb-0">{{ project_data.contributions|length }}</h4>
                                 <small class="text-muted">Contributions</small>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="border rounded p-3 text-center">
                                 <h4 class="mb-0">{{ '%.1f'|format(project_data.total_hours) }}h</h4>
                                 <small class="text-muted">Hours Logged</small>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <h4 class="mb-0">{{ project_data.updates|length if project_data.updates else 0 }}</h4>
+                                <small class="text-muted">Updates Posted</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="border rounded p-3 text-center">
                                 <h4 class="mb-0">{{ project_data.comments|length }}</h4>
                                 <small class="text-muted">Comments</small>
@@ -125,6 +142,27 @@
                                     <p class="mb-0 text-muted small">{{ contrib.description[:100] if contrib.description else '' }}{% if contrib.description and contrib.description|length > 100 %}...{% endif %}</p>
                                 </div>
                                 <small class="text-muted">{{ contrib.created_at.strftime('%b %d') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Updates Posted by Student -->
+                    {% if project_data.updates %}
+                    <h6><i class="bi bi-megaphone me-2"></i>Updates Posted</h6>
+                    <div class="list-group list-group-flush mb-4">
+                        {% for update in project_data.updates[:5] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ update.title }}</strong>
+                                    <span class="badge bg-{{ 'primary' if update.update_type == 'announcement' else 'success' if update.update_type == 'milestone' else 'info' if update.update_type == 'progress' else 'secondary' }} ms-2">
+                                        {{ update.update_type|capitalize }}
+                                    </span>
+                                    <p class="mb-0 text-muted small mt-1">{{ update.content[:150] }}{% if update.content|length > 150 %}...{% endif %}</p>
+                                </div>
+                                <small class="text-muted">{{ update.created_at.strftime('%b %d, %Y') }}</small>
                             </div>
                         </div>
                         {% endfor %}

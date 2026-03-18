@@ -19,14 +19,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="first_name" class="form-label">First Name</label>
-                                {{ form.first_name(class="form-control", placeholder="Mpumelelo", required=true) }}
+                                {{ form.first_name(class="form-control", placeholder="e.g. Mpumelelo", required=true) }}
                                 {% if form.first_name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.first_name.errors[0] }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="last_name" class="form-label">Last Name</label>
-                                {{ form.last_name(class="form-control", placeholder="Ngobese", required=true) }}
+                                {{ form.last_name(class="form-control", placeholder="e.g. Ngobese", required=true) }}
                                 {% if form.last_name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.last_name.errors[0] }}</div>
                                 {% endif %}
@@ -109,4 +109,32 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.querySelector('input[name="email"]');
+    const idInput = document.querySelector('input[name="institution_id"]');
+    const roleSelect = document.querySelector('select[name="role"]');
+
+    if (!emailInput || !idInput) return;
+
+    function tryFillFromEmail() {
+        // Only auto-fill for students
+        if (roleSelect && roleSelect.value !== 'student') return;
+
+        const val = emailInput.value || '';
+        const local = val.split('@')[0] || '';
+        const m = local.match(/^(\d{4,})/); // leading group of 4+ digits
+        if (m) {
+            idInput.value = m[1];
+        }
+    }
+
+    emailInput.addEventListener('input', tryFillFromEmail);
+    if (roleSelect) roleSelect.addEventListener('change', tryFillFromEmail);
+});
+</script>
 {% endblock %}

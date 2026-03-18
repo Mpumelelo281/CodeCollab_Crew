@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import (User, Project, ProjectMember, Milestone, Contribution, 
                        ProjectApplication, Notification, Department, Skill, ProjectGrade,
-                       ProjectComment)
+                       ProjectComment, ProjectUpdate)
 from app.forms import ProfileForm
 from app.utils.decorators import lecturer_required, admin_required
 from sqlalchemy import func
@@ -130,14 +130,31 @@ def student_dashboard():
 @lecturer_required
 def lecturer_dashboard():
     """Lecturer dashboard with project management overview."""
-    # Get owned projects
-    owned_projects = Project.query.filter_by(owner_id=current_user.id)\
-        .order_by(Project.created_at.desc()).all()
+    # Get owned projects (legacy support)
+    owned_projects_query = Project.query.filter_by(owner_id=current_user.id)
+    
+    # Also get projects in the lecturer's department (student-created projects)
+    dept_projects_query = Project.query.filter(
+        Project.department_id == current_user.department_id,
+        Project.owner_id != current_user.id
+    ) if current_user.department_id else Project.query.filter(False)
+    
+    # Combine owned + department projects (no duplicates)
+    owned_projects = owned_projects_query.order_by(Project.created_at.desc()).all()
+    dept_projects = dept_projects_query.order_by(Project.created_at.desc()).all()
+    
+    # All monitored projects (owned + department)
+    seen_ids = set()
+    all_monitored_projects = []
+    for p in owned_projects + dept_projects:
+        if p.id not in seen_ids:
+            seen_ids.add(p.id)
+            all_monitored_projects.append(p)
     
     # Split by status
-    active_projects = [p for p in owned_projects if p.status in ['open', 'in_progress']]
-    draft_projects = [p for p in owned_projects if p.status == 'draft']
-    completed_projects = [p for p in owned_projects if p.status == 'completed']
+    active_projects = [p for p in all_monitored_projects if p.status in ['open', 'in_progress']]
+    draft_projects = [p for p in all_monitored_projects if p.status == 'draft']
+    completed_projects = [p for p in all_monitored_projects if p.status == 'completed']
     
     # Get pending applications across all projects
     pending_applications = []
@@ -169,12 +186,12 @@ def lecturer_dashboard():
             })
     
     # Statistics
-    total_students = sum(p.team_count for p in owned_projects)
-    total_projects = len(owned_projects)
-    total_milestones = sum(p.milestones.count() for p in owned_projects)
+    total_students = sum(p.team_count for p in all_monitored_projects)
+    total_projects = len(all_monitored_projects)
+    total_milestones = sum(p.milestones.count() for p in all_monitored_projects)
     completed_milestones = sum(
         p.milestones.filter_by(status='completed').count() 
-        for p in owned_projects
+        for p in all_monitored_projects
     )
     
     # Completion rate
@@ -187,12 +204,12 @@ def lecturer_dashboard():
     
     # Recent activity across all projects
     recent_contributions = Contribution.query.filter(
-        Contribution.project_id.in_([p.id for p in owned_projects])
+        Contribution.project_id.in_([p.id for p in all_monitored_projects])
     ).order_by(Contribution.created_at.desc()).limit(10).all()
     
     # Recent applications for display
     recent_applications = []
-    for project in owned_projects:
+    for project in all_monitored_projects:
         apps = project.applications.filter_by(status='pending').order_by(
             ProjectApplication.applied_at.desc()
         ).limit(5).all()
@@ -202,16 +219,16 @@ def lecturer_dashboard():
     
     # Project stats for distribution chart
     project_stats = {
-        'completed': len([p for p in owned_projects if p.status == 'completed']),
-        'in_progress': len([p for p in owned_projects if p.status == 'in_progress']),
-        'open': len([p for p in owned_projects if p.status == 'open']),
-        'closed': len([p for p in owned_projects if p.status == 'closed']),
-        'draft': len([p for p in owned_projects if p.status == 'draft'])
+        'completed': len([p for p in all_monitored_projects if p.status == 'completed']),
+        'in_progress': len([p for p in all_monitored_projects if p.status == 'in_progress']),
+        'open': len([p for p in all_monitored_projects if p.status == 'open']),
+        'closed': len([p for p in all_monitored_projects if p.status == 'closed']),
+        'draft': len([p for p in all_monitored_projects if p.status == 'draft'])
     }
     
     # Get student progress data
     student_progress = []
-    for project in owned_projects:
+    for project in all_monitored_projects:
         members = project.members.filter_by(status='active').all()
         for member in members:
             # Get contribution count for this student in this project
@@ -245,7 +262,7 @@ def lecturer_dashboard():
             })
     
     return render_template('dashboard/lecturer.html',
-                         my_projects=owned_projects,
+                         my_projects=all_monitored_projects,
                          active_projects=active_projects,
                          draft_projects=draft_projects,
                          completed_projects=completed_projects,
@@ -416,8 +433,25 @@ def reports():
 @lecturer_required
 def project_reports():
     """Project participation and completion reports."""
-    # Get lecturer's projects
-    projects = Project.query.filter_by(owner_id=current_user.id).all()
+    # Get lecturer's own projects AND student projects from same department
+    own_projects = Project.query.filter_by(owner_id=current_user.id).all()
+    
+    dept_projects = []
+    if current_user.department_id:
+        dept_student_ids = [u.id for u in User.query.filter_by(
+            department_id=current_user.department_id, role='student'
+        ).all()]
+        dept_projects = Project.query.filter(
+            Project.owner_id.in_(dept_student_ids)
+        ).all() if dept_student_ids else []
+    
+    # Combine and deduplicate
+    seen_ids = set()
+    projects = []
+    for p in own_projects + dept_projects:
+        if p.id not in seen_ids:
+            seen_ids.add(p.id)
+            projects.append(p)
     
     report_data = []
     for project in projects:
@@ -450,8 +484,20 @@ def project_reports():
 @lecturer_required
 def engagement_reports():
     """Student engagement reports."""
-    # Get all students in lecturer's projects
-    project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+    # Get all students in lecturer's projects AND department projects
+    own_project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+    
+    dept_project_ids = []
+    if current_user.department_id:
+        dept_student_ids = [u.id for u in User.query.filter_by(
+            department_id=current_user.department_id, role='student'
+        ).all()]
+        if dept_student_ids:
+            dept_project_ids = [p.id for p in Project.query.filter(
+                Project.owner_id.in_(dept_student_ids)
+            ).all()]
+    
+    project_ids = list(set(own_project_ids + dept_project_ids))
     
     members = ProjectMember.query.filter(
         ProjectMember.project_id.in_(project_ids),
@@ -502,7 +548,24 @@ def engagement_reports():
 @lecturer_required
 def grading_overview():
     """Overview of projects that need grading."""
-    projects = Project.query.filter_by(owner_id=current_user.id).all()
+    # Get lecturer's own projects AND student projects from same department
+    own_projects = Project.query.filter_by(owner_id=current_user.id).all()
+    
+    dept_projects = []
+    if current_user.department_id:
+        dept_student_ids = [u.id for u in User.query.filter_by(
+            department_id=current_user.department_id, role='student'
+        ).all()]
+        dept_projects = Project.query.filter(
+            Project.owner_id.in_(dept_student_ids)
+        ).all() if dept_student_ids else []
+    
+    seen_ids = set()
+    projects = []
+    for p in own_projects + dept_projects:
+        if p.id not in seen_ids:
+            seen_ids.add(p.id)
+            projects.append(p)
     
     grading_data = []
     for project in projects:
@@ -544,7 +607,13 @@ def grade_project(project_id):
     """Grade students in a specific project."""
     project = Project.query.get_or_404(project_id)
     
-    if project.owner_id != current_user.id:
+    # Allow if lecturer owns the project OR is in same department as the project owner
+    is_owner = project.owner_id == current_user.id
+    is_dept_lecturer = (current_user.department_id and 
+                        project.owner and 
+                        project.owner.department_id == current_user.department_id)
+    
+    if not is_owner and not is_dept_lecturer:
         flash('You do not have permission to grade this project.', 'danger')
         return redirect(url_for('dashboard.grading_overview'))
     
@@ -582,7 +651,13 @@ def grade_student(project_id, student_id):
     project = Project.query.get_or_404(project_id)
     student = User.query.get_or_404(student_id)
     
-    if project.owner_id != current_user.id:
+    # Allow if lecturer owns the project OR is in same department as the project owner
+    is_owner = project.owner_id == current_user.id
+    is_dept_lecturer = (current_user.department_id and 
+                        project.owner and 
+                        project.owner.department_id == current_user.department_id)
+    
+    if not is_owner and not is_dept_lecturer:
         flash('You do not have permission to grade this project.', 'danger')
         return redirect(url_for('dashboard.grading_overview'))
     
@@ -670,7 +745,13 @@ def project_contributions(project_id):
     """View all contributions (changes) made to a project."""
     project = Project.query.get_or_404(project_id)
     
-    if project.owner_id != current_user.id:
+    # Allow if lecturer owns the project OR is in same department as the project owner
+    is_owner = project.owner_id == current_user.id
+    is_dept_lecturer = (current_user.department_id and 
+                        project.owner and 
+                        project.owner.department_id == current_user.department_id)
+    
+    if not is_owner and not is_dept_lecturer:
         flash('You do not have permission to view this project.', 'danger')
         return redirect(url_for('dashboard.index'))
     
@@ -708,7 +789,17 @@ def project_contributions(project_id):
 def contribution_stats():
     """Get contribution statistics for charts."""
     if current_user.is_lecturer:
-        project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+        own_project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+        dept_project_ids = []
+        if current_user.department_id:
+            dept_student_ids = [u.id for u in User.query.filter_by(
+                department_id=current_user.department_id, role='student'
+            ).all()]
+            if dept_student_ids:
+                dept_project_ids = [p.id for p in Project.query.filter(
+                    Project.owner_id.in_(dept_student_ids)
+                ).all()]
+        project_ids = list(set(own_project_ids + dept_project_ids))
         contributions = Contribution.query.filter(Contribution.project_id.in_(project_ids))
     else:
         contributions = Contribution.query.filter_by(user_id=current_user.id)
@@ -741,7 +832,17 @@ def contribution_stats():
 def milestone_stats():
     """Get milestone statistics for charts."""
     if current_user.is_lecturer:
-        project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+        own_project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
+        dept_project_ids = []
+        if current_user.department_id:
+            dept_student_ids = [u.id for u in User.query.filter_by(
+                department_id=current_user.department_id, role='student'
+            ).all()]
+            if dept_student_ids:
+                dept_project_ids = [p.id for p in Project.query.filter(
+                    Project.owner_id.in_(dept_student_ids)
+                ).all()]
+        project_ids = list(set(own_project_ids + dept_project_ids))
     else:
         memberships = ProjectMember.query.filter_by(user_id=current_user.id, status='active').all()
         project_ids = [m.project_id for m in memberships]
@@ -779,25 +880,43 @@ def milestone_stats():
 @login_required
 @lecturer_required
 def view_all_students():
-    """View all students across all lecturer's projects."""
-    projects = Project.query.filter_by(owner_id=current_user.id).all()
+    """View all students across lecturer's department projects."""
+    # Get owned projects + department projects
+    owned_projects = Project.query.filter_by(owner_id=current_user.id).all()
+    dept_projects = []
+    if current_user.department_id:
+        dept_projects = Project.query.filter(
+            Project.department_id == current_user.department_id,
+            Project.owner_id != current_user.id
+        ).all()
+    
+    seen_ids = set()
+    projects = []
+    for p in owned_projects + dept_projects:
+        if p.id not in seen_ids:
+            seen_ids.add(p.id)
+            projects.append(p)
     
     students_data = []
     seen_students = set()
     
     for project in projects:
+        # Include project members
         members = project.members.filter_by(status='active').all()
         for member in members:
-            if member.user_id not in seen_students:
+            if member.user_id not in seen_students and member.user.is_student:
                 seen_students.add(member.user_id)
                 
-                # Get contribution count across all projects
-                contribution_count = Contribution.query.filter_by(user_id=member.user_id).count()
+                # Get contribution count across all monitored projects
+                contribution_count = Contribution.query.filter(
+                    Contribution.user_id == member.user_id,
+                    Contribution.project_id.in_([p.id for p in projects])
+                ).count()
                 
-                # Get projects this student is involved in (owned by this lecturer)
+                # Get projects this student is involved in
                 student_projects = []
                 for p in projects:
-                    if p.members.filter_by(user_id=member.user_id, status='active').first():
+                    if p.owner_id == member.user_id or p.members.filter_by(user_id=member.user_id, status='active').first():
                         student_projects.append(p)
                 
                 students_data.append({
@@ -806,6 +925,25 @@ def view_all_students():
                     'contribution_count': contribution_count,
                     'joined_at': member.joined_at
                 })
+        
+        # Also include project owner if they are a student
+        if project.owner and project.owner.is_student and project.owner_id not in seen_students:
+            seen_students.add(project.owner_id)
+            
+            contribution_count = Contribution.query.filter(
+                Contribution.user_id == project.owner_id,
+                Contribution.project_id.in_([p.id for p in projects])
+            ).count()
+            
+            student_projects = [p for p in projects if p.owner_id == project.owner_id or 
+                              p.members.filter_by(user_id=project.owner_id, status='active').first()]
+            
+            students_data.append({
+                'student': project.owner,
+                'projects': student_projects,
+                'contribution_count': contribution_count,
+                'joined_at': project.created_at
+            })
     
     # Sort by name
     students_data.sort(key=lambda x: x['student'].full_name)
@@ -822,29 +960,54 @@ def view_student_details(student_id):
     """View a specific student's progress and work."""
     student = User.query.get_or_404(student_id)
     
-    # Get lecturer's projects
+    # Get lecturer's owned projects + department projects
     lecturer_projects = Project.query.filter_by(owner_id=current_user.id).all()
-    project_ids = [p.id for p in lecturer_projects]
+    dept_projects = []
+    if current_user.department_id:
+        dept_projects = Project.query.filter(
+            Project.department_id == current_user.department_id,
+            Project.owner_id != current_user.id
+        ).all()
     
-    # Check if student is in any of the lecturer's projects
+    seen_ids = set()
+    all_projects = []
+    for p in lecturer_projects + dept_projects:
+        if p.id not in seen_ids:
+            seen_ids.add(p.id)
+            all_projects.append(p)
+    project_ids = [p.id for p in all_projects]
+    
+    # Check if student is in any of the lecturer's monitored projects
     memberships = ProjectMember.query.filter(
         ProjectMember.user_id == student_id,
         ProjectMember.project_id.in_(project_ids),
         ProjectMember.status == 'active'
     ).all()
     
-    if not memberships:
-        flash('This student is not in any of your projects.', 'warning')
+    # Also check if student owns any of these projects
+    owned_by_student = [p for p in all_projects if p.owner_id == student_id]
+    
+    if not memberships and not owned_by_student:
+        flash('This student is not in any of your monitored projects.', 'warning')
         return redirect(url_for('dashboard.view_all_students'))
     
-    # Get student's projects (that belong to this lecturer)
+    # Get student's projects (memberships + owned)
     student_projects = []
+    seen_project_ids = set()
+    
     for membership in memberships:
         project = membership.project
+        seen_project_ids.add(project.id)
         contributions = Contribution.query.filter_by(
             project_id=project.id,
             user_id=student_id
         ).order_by(Contribution.created_at.desc()).all()
+        
+        # Get project updates by this student
+        student_updates = ProjectUpdate.query.filter_by(
+            project_id=project.id,
+            author_id=student_id
+        ).order_by(ProjectUpdate.created_at.desc()).all()
         
         comments = ProjectComment.query.filter_by(
             project_id=project.id,
@@ -855,9 +1018,38 @@ def view_student_details(student_id):
             'project': project,
             'membership': membership,
             'contributions': contributions,
+            'updates': student_updates,
             'comments': comments,
             'total_hours': sum(c.hours_spent or 0 for c in contributions)
         })
+    
+    # Add projects owned by the student
+    for project in owned_by_student:
+        if project.id not in seen_project_ids:
+            contributions = Contribution.query.filter_by(
+                project_id=project.id,
+                user_id=student_id
+            ).order_by(Contribution.created_at.desc()).all()
+            
+            student_updates = ProjectUpdate.query.filter_by(
+                project_id=project.id,
+                author_id=student_id
+            ).order_by(ProjectUpdate.created_at.desc()).all()
+            
+            comments = ProjectComment.query.filter_by(
+                project_id=project.id,
+                target_student_id=student_id
+            ).order_by(ProjectComment.created_at.desc()).all()
+            
+            student_projects.append({
+                'project': project,
+                'membership': None,
+                'contributions': contributions,
+                'updates': student_updates,
+                'comments': comments,
+                'total_hours': sum(c.hours_spent or 0 for c in contributions),
+                'is_owner': True
+            })
     
     return render_template('dashboard/student_details.html',
                          student=student,

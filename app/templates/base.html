@@ -51,6 +51,7 @@
                             <i class="bi bi-people me-1"></i>Collaborate
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="collabDropdown">
+                            {% if current_user.is_student %}
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('projects.create_project') }}">
                                     <i class="bi bi-plus-circle me-2"></i>Create Project
@@ -66,6 +67,24 @@
                                     <i class="bi bi-envelope me-2"></i>Received Invitations
                                 </a>
                             </li>
+                            {% endif %}
+                            {% if current_user.is_lecturer %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('dashboard.view_all_students') }}">
+                                    <i class="bi bi-people me-2"></i>View All Students
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('dashboard.reports') }}">
+                                    <i class="bi bi-bar-chart me-2"></i>Reports
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('dashboard.grading_overview') }}">
+                                    <i class="bi bi-mortarboard me-2"></i>Grading
+                                </a>
+                            </li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('projects.list_projects') }}">

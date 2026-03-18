@@ -103,9 +103,9 @@
     <div class="card">
         <div class="card-body text-center py-5">
             <i class="bi bi-mortarboard display-4 text-muted"></i>
-            <p class="text-muted mt-3">You haven't created any projects yet.</p>
-            <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
-                <i class="bi bi-plus me-1"></i>Create Project
+            <p class="text-muted mt-3">No student projects available for grading yet.</p>
+            <a href="{{ url_for('dashboard.view_all_students') }}" class="btn btn-primary">
+                <i class="bi bi-people me-1"></i>View All Students
             </a>
         </div>
     </div>

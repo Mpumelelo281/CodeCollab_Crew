@@ -52,52 +52,16 @@ def send_verification_email(user):
     verify_url = url_for('auth.verify_email', token=token, _external=True)
     
     subject = 'Verify Your Email - ColabPlatform'
-    
-    text_body = f"""
-Hello {user.first_name},
+    # Use templates so the content is editable in the project templates folder.
+    text_body = render_template('emails/verification_email.txt', user=user, verify_url=verify_url)
+    html_body = render_template('emails/verification_email.html', user=user, verify_url=verify_url)
 
-Welcome to ColabPlatform! Please verify your email address by clicking the link below:
+    # Use the requested outgoing address as sender. Fall back to config default if needed.
+    sender = 'ngobesempumelelo2@gmail.com'
+    if current_app.config.get('MAIL_DEFAULT_SENDER'):
+        sender = current_app.config.get('MAIL_DEFAULT_SENDER')
 
-{verify_url}
-
-This link will expire in 24 hours.
-
-If you did not create an account, please ignore this email.
-
-Best regards,
-The ColabPlatform Team
-"""
-    
-    html_body = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .button {{ display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 6px; }}
-        .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Welcome to ColabPlatform!</h2>
-        <p>Hello {user.first_name},</p>
-        <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-        <p><a href="{verify_url}" class="button">Verify Email</a></p>
-        <p>Or copy and paste this link into your browser:</p>
-        <p><a href="{verify_url}">{verify_url}</a></p>
-        <p>This link will expire in 24 hours.</p>
-        <div class="footer">
-            <p>If you did not create an account, please ignore this email.</p>
-            <p>Best regards,<br>The ColabPlatform Team</p>
-        </div>
-    </div>
-</body>
-</html>
-"""
-    
-    send_email(subject, [user.email], text_body, html_body)
+    send_email(subject, [user.email], text_body, html_body, sender=sender)
 
 
 def send_password_reset_email(user):

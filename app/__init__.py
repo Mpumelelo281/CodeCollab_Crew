@@ -144,3 +144,17 @@ def register_cli_commands(app):
         db.session.add(user)
         db.session.commit()
         click.echo(f'Admin user {email} created!')
+
+    @app.cli.command('send-test-email')
+    @click.argument('recipient')
+    @click.option('--subject', default='Test Email from ColabPlatform')
+    def send_test_email(recipient, subject):
+        """Send a simple test email to the given recipient."""
+        from app.utils.email import send_email
+        text = 'This is a test email sent from your ColabPlatform instance.'
+        html = '<p>This is a <strong>test</strong> email sent from your ColabPlatform instance.</p>'
+        try:
+            send_email(subject, [recipient], text, html)
+            click.echo(f'Test email sent to {recipient}')
+        except Exception as e:
+            click.echo(f'Failed to send test email: {e}')

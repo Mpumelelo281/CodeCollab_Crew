@@ -1,5 +1,6 @@
 """Authentication routes."""
 from datetime import datetime, timezone
+import re
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, bcrypt
@@ -91,18 +92,25 @@ def register():
             first_name=form.first_name.data,
             last_name=form.last_name.data,
             department_id=form.department.data if form.department.data != 0 else None,
-            is_verified=True  # Auto-verify for now (email not configured)
+            is_verified=False
         )
         user.set_password(form.password.data)
         
-        # Set student or faculty ID based on role
+        # Set student or faculty ID based on role. If the user left the ID blank
+        # attempt to extract the first sequence of digits from the email local-part.
+        provided_id = (form.institution_id.data or '').strip()
+        if not provided_id:
+            local = email.split('@')[0]
+            m = re.search(r"(\d+)", local)
+            provided_id = m.group(1) if m else ''
+
         if form.role.data == 'student':
-            user.student_id = form.institution_id.data
+            user.student_id = provided_id
             student_role = Role.query.filter_by(name='student').first()
             if student_role:
                 user.roles.append(student_role)
         else:
-            user.employee_id = form.institution_id.data
+            user.employee_id = provided_id
             lecturer_role = Role.query.filter_by(name='lecturer').first()
             if lecturer_role:
                 user.roles.append(lecturer_role)
@@ -110,8 +118,21 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        flash('Registration successful! You can now log in.', 'success')
-        
+        # Attempt to send verification email. If mail is not configured in development,
+        # auto-verify the account so registration flow remains smooth.
+        try:
+            if not current_app.config.get('MAIL_USERNAME'):
+                # Mail not configured — auto-verify in dev
+                user.is_verified = True
+                db.session.commit()
+                flash('Registration successful! Email sending is not configured; your account has been verified automatically.', 'success')
+            else:
+                send_verification_email(user)
+                flash('Registration successful! A verification email has been sent — please check your inbox.', 'success')
+        except Exception as e:
+            current_app.logger.error(f'Error sending verification email: {e}')
+            flash('Registration successful, but we could not send a verification email. Please contact support.', 'warning')
+
         AuditLog.log('registration', user_id=user.id, request=request)
         return redirect(url_for('auth.login'))
     
