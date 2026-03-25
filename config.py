@@ -43,6 +43,12 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@colabplatform.edu')
+    APP_BASE_URL = os.environ.get('APP_BASE_URL', '').strip()
+    INSTITUTION_EMAIL_DOMAINS = tuple(
+        domain.strip().lower()
+        for domain in os.environ.get('INSTITUTION_EMAIL_DOMAINS', 'dut4life.ac.za,dut.ac.za').split(',')
+        if domain.strip()
+    )
     
     # JWT Settings
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or SECRET_KEY

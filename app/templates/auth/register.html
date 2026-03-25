@@ -111,7 +111,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -122,19 +122,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!emailInput || !idInput) return;
 
     function tryFillFromEmail() {
-        // Only auto-fill for students
+        // Only auto-fill for students. Keep lecturer field manually editable.
         if (roleSelect && roleSelect.value !== 'student') return;
 
         const val = emailInput.value || '';
         const local = val.split('@')[0] || '';
-        const m = local.match(/^(\d{4,})/); // leading group of 4+ digits
+        const m = local.match(/(\d{4,})/); // first run of 4+ digits in local-part
         if (m) {
             idInput.value = m[1];
         }
     }
 
     emailInput.addEventListener('input', tryFillFromEmail);
+    emailInput.addEventListener('blur', tryFillFromEmail);
     if (roleSelect) roleSelect.addEventListener('change', tryFillFromEmail);
+
+    // Also run once in case browser autofill already populated email.
+    tryFillFromEmail();
 });
 </script>
 {% endblock %}

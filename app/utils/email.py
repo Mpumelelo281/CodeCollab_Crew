@@ -6,6 +6,23 @@ from app.utils.security import generate_token
 from threading import Thread
 
 
+def normalize_recipient_email(email):
+    """Normalize known recipient domain typos before sending."""
+    normalized = (email or '').strip().lower()
+    if normalized.endswith('@dut4life.co.za'):
+        return normalized.replace('@dut4life.co.za', '@dut4life.ac.za')
+    return normalized
+
+
+def build_app_url(endpoint, **values):
+    """Build an absolute URL for email links using APP_BASE_URL when configured."""
+    base_url = (current_app.config.get('APP_BASE_URL') or '').strip().rstrip('/')
+    path = url_for(endpoint, _external=False, **values)
+    if base_url:
+        return f'{base_url}{path}'
+    return url_for(endpoint, _external=True, **values)
+
+
 def send_async_email(app, msg):
     """Send email asynchronously."""
     with app.app_context():
@@ -28,8 +45,19 @@ def send_email(subject, recipients, text_body=None, html_body=None, sender=None)
     """
     if sender is None:
         sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+
+    normalized_recipients = []
+    for recipient in recipients or []:
+        cleaned = normalize_recipient_email(recipient)
+        if cleaned:
+            normalized_recipients.append(cleaned)
+
+    # Remove duplicates while preserving order.
+    normalized_recipients = list(dict.fromkeys(normalized_recipients))
+    if not normalized_recipients:
+        raise ValueError('No valid recipients were provided for email sending.')
     
-    msg = Message(subject=subject, sender=sender, recipients=recipients)
+    msg = Message(subject=subject, sender=sender, recipients=normalized_recipients)
     
     if text_body:
         msg.body = text_body
@@ -49,7 +77,7 @@ def send_email(subject, recipients, text_body=None, html_body=None, sender=None)
 def send_verification_email(user):
     """Send email verification link to user."""
     token = generate_token(user.id, 'email-verify', expiration=86400)  # 24 hours
-    verify_url = url_for('auth.verify_email', token=token, _external=True)
+    verify_url = build_app_url('auth.verify_email', token=token)
     
     subject = 'Verify Your Email - ColabPlatform'
     # Use templates so the content is editable in the project templates folder.
@@ -67,7 +95,7 @@ def send_verification_email(user):
 def send_password_reset_email(user):
     """Send password reset link to user."""
     token = generate_token(user.id, 'password-reset', expiration=3600)  # 1 hour
-    reset_url = url_for('auth.reset_password', token=token, _external=True)
+    reset_url = build_app_url('auth.reset_password', token=token)
     
     subject = 'Reset Your Password - ColabPlatform'
     
@@ -122,7 +150,7 @@ def send_notification_email(user, notification):
     """Send email notification for important events."""
     subject = f'{notification.title} - ColabPlatform'
     
-    action_link = notification.action_url if notification.action_url else url_for('dashboard.index', _external=True)
+    action_link = notification.action_url if notification.action_url else build_app_url('dashboard.index')
     
     text_body = f"""
 Hello {user.first_name},
@@ -169,7 +197,7 @@ def send_deadline_reminder(user, milestone, project):
     """Send reminder email for upcoming deadline."""
     subject = f'Deadline Reminder: {milestone.title} - ColabPlatform'
     
-    project_url = url_for('projects.view_milestones', project_id=project.id, _external=True)
+    project_url = build_app_url('projects.view_milestones', project_id=project.id)
     
     text_body = f"""
 Hello {user.first_name},

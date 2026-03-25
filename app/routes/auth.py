@@ -13,6 +13,23 @@ import secrets
 auth_bp = Blueprint('auth', __name__)
 
 
+def normalize_institutional_email(raw_email):
+    """Normalize common institutional email input issues."""
+    email = (raw_email or '').strip().lower()
+    if email.endswith('@dut4life.co.za'):
+        return email.replace('@dut4life.co.za', '@dut4life.ac.za')
+    return email
+
+
+def is_allowed_institutional_email(email):
+    """Return True when email domain is in configured institutional domains."""
+    if '@' not in email:
+        return False
+    domain = email.rsplit('@', 1)[1]
+    allowed_domains = current_app.config.get('INSTITUTION_EMAIL_DOMAINS', ())
+    return domain in allowed_domains
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login."""
@@ -75,10 +92,14 @@ def register():
             flash(message, 'danger')
             return render_template('auth/register.html', form=form)
         
-        # Check if email domain is institutional
-        email = form.email.data.lower()
-        if not (email.endswith('.co.za') or email.endswith('.ac.za')):
-            flash('Please use your institutional email address (ending with .co.za or .ac.za).', 'danger')
+        # Normalize common typos and validate institutional domain.
+        email = normalize_institutional_email(form.email.data)
+        if email != (form.email.data or '').strip().lower():
+            flash('We corrected your email domain to dut4life.ac.za.', 'info')
+
+        if not is_allowed_institutional_email(email):
+            allowed = ', '.join(current_app.config.get('INSTITUTION_EMAIL_DOMAINS', ()))
+            flash(f'Please use your institutional email address ({allowed}).', 'danger')
             return render_template('auth/register.html', form=form)
         
         # Check if user already exists
@@ -103,6 +124,10 @@ def register():
             local = email.split('@')[0]
             m = re.search(r"(\d+)", local)
             provided_id = m.group(1) if m else ''
+
+        if not provided_id:
+            flash('Please provide a valid Student/Employee ID or use an email whose first digits are your ID.', 'danger')
+            return render_template('auth/register.html', form=form)
 
         if form.role.data == 'student':
             user.student_id = provided_id
@@ -182,8 +207,9 @@ def resend_verification():
         return redirect(url_for('main.index'))
     
     if request.method == 'POST':
-        email = request.form.get('email', '').lower()
-        user = User.query.filter_by(email=email).first()
+        raw_email = (request.form.get('email', '') or '').strip().lower()
+        email = normalize_institutional_email(raw_email)
+        user = User.query.filter(User.email.in_([email, raw_email])).first()
         
         if user and not user.is_verified:
             try:
@@ -209,12 +235,14 @@ def forgot_password():
     
     form = ForgotPasswordForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        raw_email = (form.email.data or '').strip().lower()
+        email = normalize_institutional_email(form.email.data)
+        user = User.query.filter(User.email.in_([email, raw_email])).first()
         
         # Always show success message to prevent email enumeration
         flash('If an account with that email exists, a password reset link has been sent.', 'info')
         
-        if user and user.is_verified:
+        if user:
             try:
                 send_password_reset_email(user)
             except Exception as e:

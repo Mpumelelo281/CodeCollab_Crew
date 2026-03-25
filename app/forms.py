@@ -42,7 +42,7 @@ class RegistrationForm(FlaskForm):
         ('lecturer', 'Faculty/Lecturer')
     ], validators=[DataRequired()])
     institution_id = StringField('Student/Employee ID', validators=[
-        DataRequired(message='Institution ID is required'),
+        Optional(),
         Length(min=4, max=20)
     ])
     department = SelectField('Department', coerce=int, validators=[Optional()])
