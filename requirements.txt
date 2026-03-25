@@ -48,3 +48,4 @@ psycopg2-binary==2.9.9
 
 # Development
 flask-debugtoolbar==0.14.1
+# Optional: For better performance in production, consider using a production-ready database adapter like psycopg2 for PostgreSQL or mysqlclient for MySQL instead of the binary versions.
