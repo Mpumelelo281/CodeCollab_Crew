@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import re
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy.exc import IntegrityError
 from app import db, bcrypt
 from app.models import User, Role, Department, AuditLog
 from app.forms import LoginForm, RegistrationForm, ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm
@@ -130,18 +131,30 @@ def register():
             return render_template('auth/register.html', form=form)
 
         if form.role.data == 'student':
+            if User.query.filter_by(student_id=provided_id).first():
+                flash('A student account with that Student ID already exists.', 'danger')
+                return render_template('auth/register.html', form=form)
             user.student_id = provided_id
             student_role = Role.query.filter_by(name='student').first()
             if student_role:
                 user.roles.append(student_role)
         else:
+            if User.query.filter_by(employee_id=provided_id).first():
+                flash('A lecturer account with that Employee ID already exists.', 'danger')
+                return render_template('auth/register.html', form=form)
             user.employee_id = provided_id
             lecturer_role = Role.query.filter_by(name='lecturer').first()
             if lecturer_role:
                 user.roles.append(lecturer_role)
-        
+
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            current_app.logger.exception('Registration failed due to integrity constraint violation.')
+            flash('Registration failed because this account information already exists. Please verify your email and Student/Employee ID.', 'danger')
+            return render_template('auth/register.html', form=form)
         
         # Attempt to send verification email. If mail is not configured in development,
         # auto-verify the account so registration flow remains smooth.
