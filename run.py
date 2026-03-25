@@ -4,7 +4,8 @@ from app import create_app, db
 from app.models import User, Role, Project, Milestone, Department, Course, Skill
 
 
-app = create_app(os.environ.get('FLASK_CONFIG', 'development'))
+# Default to production for safer cloud deployment; set FLASK_CONFIG=development locally.
+app = create_app(os.environ.get('FLASK_CONFIG', 'production'))
 
 
 @app.shell_context_processor

@@ -5,12 +5,30 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _normalize_database_url(db_url):
+    """Normalize database URLs for SQLAlchemy compatibility."""
+    if not db_url:
+        return db_url
+    # Some providers still return postgres:// URLs.
+    if db_url.startswith('postgres://'):
+        return db_url.replace('postgres://', 'postgresql://', 1)
+    return db_url
+
 class Config:
     """Base configuration."""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    
+
+    # Deployment environment
+    IS_VERCEL = os.environ.get('VERCEL') == '1'
+
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///colabplatform.db'
+    _raw_database_url = (
+        os.environ.get('DATABASE_URL') or
+        os.environ.get('POSTGRES_URL') or
+        os.environ.get('POSTGRES_PRISMA_URL')
+    )
+    SQLALCHEMY_DATABASE_URI = _normalize_database_url(_raw_database_url) or 'sqlite:///colabplatform.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
@@ -33,7 +51,8 @@ class Config:
     
     # File uploads
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    # Vercel file system is ephemeral; /tmp is writable per invocation.
+    UPLOAD_FOLDER = '/tmp/uploads' if IS_VERCEL else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'zip', 'py', 'js', 'html', 'css'}
     
     # Mail configuration
@@ -89,6 +108,7 @@ class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
     SQLALCHEMY_ECHO = False
+    PREFERRED_URL_SCHEME = 'https'
     
     @classmethod
     def init_app(cls, app):
