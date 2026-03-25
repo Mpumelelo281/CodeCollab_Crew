@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">Frequently Asked Questions</h1>
+            <p class="lead text-secondary">
+                Find answers to common questions about CodeCollab Crew.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- General Questions -->
+            <div class="mb-5">
+                <h2 class="h4 fw-bold mb-4">
+                    <i class="bi bi-question-circle text-primary me-2"></i>General Questions
+                </h2>
+                <div class="accordion" id="generalFAQ">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq1" aria-expanded="true">
+                                What is CodeCollab Crew?
+                            </button>
+                        </h3>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#generalFAQ">
+                            <div class="accordion-body">
+                                CodeCollab Crew is a collaboration platform designed to connect students with faculty 
+                                members for academic project collaboration. It enables students to create projects, 
+                                form teams, and contribute to meaningful work while lecturers monitor and assess their progress.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq2">
+                                Who can use CodeCollab Crew?
+                            </button>
+                        </h3>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#generalFAQ">
+                            <div class="accordion-body">
+                                CodeCollab Crew is available to students and faculty members with valid institutional 
+                                email addresses (ending with .co.za). Both students and lecturers can register 
+                                and participate in projects.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq3">
+                                Is CodeCollab Crew free to use?
+                            </button>
+                        </h3>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#generalFAQ">
+                            <div class="accordion-body">
+                                Yes, CodeCollab Crew is completely free for all registered students and faculty members 
+                                of participating institutions.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Questions -->
+            <div class="mb-5">
+                <h2 class="h4 fw-bold mb-4">
+                    <i class="bi bi-mortarboard text-success me-2"></i>For Students
+                </h2>
+                <div class="accordion" id="studentFAQ">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq4">
+                                How do I join a project?
+                            </button>
+                        </h3>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#studentFAQ">
+                            <div class="accordion-body">
+                                Browse available projects, find one that matches your interests and skills, 
+                                and click "Apply to Join". You'll need to submit an application which will be 
+                                reviewed by the project owner.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq5">
+                                Can I join multiple projects?
+                            </button>
+                        </h3>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#studentFAQ">
+                            <div class="accordion-body">
+                                Yes, you can apply to and participate in multiple projects simultaneously, 
+                                as long as you can manage your time and commitments effectively.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq6">
+                                How are my contributions tracked?
+                            </button>
+                        </h3>
+                        <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#studentFAQ">
+                            <div class="accordion-body">
+                                All your contributions are logged on the platform. Project owners can see 
+                                your submissions, and you can build a portfolio of your work over time.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faculty Questions -->
+            <div class="mb-5">
+                <h2 class="h4 fw-bold mb-4">
+                    <i class="bi bi-person-workspace text-warning me-2"></i>For Faculty
+                </h2>
+                <div class="accordion" id="facultyFAQ">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq7">
+                                How do I monitor student projects?
+                            </button>
+                        </h3>
+                        <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#facultyFAQ">
+                            <div class="accordion-body">
+                                Once logged in, go to your dashboard to see all student projects in your department. 
+                                You can view project details, track contributions, and monitor progress from there.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#faq8">
+                                Can I set specific requirements for applicants?
+                            </button>
+                        </h3>
+                        <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#facultyFAQ">
+                            <div class="accordion-body">
+                                Yes, you can specify required skills, tools, and prerequisites when creating 
+                                your project. You can also review each application individually before accepting.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Section -->
+            <div class="card bg-light">
+                <div class="card-body p-4 text-center">
+                    <h3 class="h5 fw-bold mb-2">Still have questions?</h3>
+                    <p class="text-secondary mb-3">
+                        Can't find what you're looking for? Our support team is here to help.
+                    </p>
+                    <a href="{{ url_for('main.contact') }}" class="btn btn-primary">
+                        <i class="bi bi-envelope me-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

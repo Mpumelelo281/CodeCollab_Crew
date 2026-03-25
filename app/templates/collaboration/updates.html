@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Project Updates - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('collaboration.project_workspace', project_id=project.id) }}">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</a></li>
+                <li class="breadcrumb-item active">Updates</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Project Updates</h1>
+                <p class="page-subtitle">Stay informed about team progress</p>
+            </div>
+            <a href="{{ url_for('collaboration.add_update', project_id=project.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus me-1"></i>Post Update
+            </a>
+        </div>
+    </div>
+
+    {% if updates.items %}
+    <div class="row">
+        <div class="col-lg-8">
+            {% for update in updates.items %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-3">
+                            {{ update.author.first_name[0] }}{{ update.author.last_name[0] }}
+                        </div>
+                        <div>
+                            <strong>{{ update.author.full_name }}</strong>
+                            <br><small class="text-muted">{{ update.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-{{ 'primary' if update.update_type == 'announcement' else 'success' if update.update_type == 'milestone' else 'info' if update.update_type == 'progress' else 'secondary' }}">
+                        {{ update.update_type|capitalize }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ update.title }}</h5>
+                    <p class="card-text">{{ update.content }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if updates.pages > 1 %}
+            <nav aria-label="Updates pagination">
+                <ul class="pagination justify-content-center">
+                    {% if updates.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('collaboration.updates', project_id=project.id, page=updates.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in updates.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == updates.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('collaboration.updates', project_id=project.id, page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if updates.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('collaboration.updates', project_id=project.id, page=updates.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>About Updates</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Updates help keep the team informed about project progress. Use them to:</p>
+                    <ul class="small text-muted mb-0">
+                        <li>Share progress on tasks</li>
+                        <li>Announce important changes</li>
+                        <li>Report milestone completions</li>
+                        <li>Ask questions or request help</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-chat-dots display-4 text-muted"></i>
+            <h4 class="mt-3">No Updates Yet</h4>
+            <p class="text-muted">Be the first to share an update with your team!</p>
+            <a href="{{ url_for('collaboration.add_update', project_id=project.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus me-1"></i>Post First Update
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

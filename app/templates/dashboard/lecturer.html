@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}Lecturer Dashboard - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <h1 class="page-title">Welcome back, {{ current_user.first_name }}!</h1>
+        <p class="page-subtitle">Manage your projects and monitor student progress</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-folder"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_projects }}</h3>
+                    <p>Total Projects</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_students }}</h3>
+                    <p>Active Students</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-envelope"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ pending_applications }}</h3>
+                    <p>Pending Applications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ completion_rate }}%</h3>
+                    <p>Completion Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- My Projects -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-folder2-open me-2"></i>Student Projects</h5>
+                    <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-search me-1"></i>Browse All Projects
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if my_projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Team</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th>Applications</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in my_projects %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ project.title }}</strong>
+                                        <br><small class="text-muted">{{ project.created_at.strftime('%b %d, %Y') }}</small>
+                                    </td>
+                                    <td>{{ project.team_count }}</td>
+                                    <td>
+                                        <div class="progress" style="width: 100px; height: 6px;">
+                                            <div class="progress-bar" style="width: {{ project.progress }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ project.progress }}%</small>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ project.status }}">
+                                            {{ project.status.replace('_', ' ') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if project.pending_applications > 0 %}
+                                        <span class="badge bg-warning">{{ project.pending_applications }} pending</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                    type="button" data-bs-toggle="dropdown">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('projects.view_project', project_id=project.id) }}">
+                                                        <i class="bi bi-eye me-2"></i>View
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('projects.edit_project', project_id=project.id) }}">
+                                                        <i class="bi bi-pencil me-2"></i>Edit
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('projects.manage_applications', project_id=project.id) }}">
+                                                        <i class="bi bi-people me-2"></i>Applications
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('collaboration.project_workspace', project_id=project.id) }}">
+                                                        <i class="bi bi-kanban me-2"></i>Workspace
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-folder-plus display-4 text-muted"></i>
+                        <p class="text-muted mt-2">No student projects to monitor yet.</p>
+                        <p class="text-muted small">Students will create projects that you can view and monitor here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Applications -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Recent Applications</h5>
+                    <a href="{{ url_for('projects.my_projects') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_applications %}
+                    <div class="list-group list-group-flush">
+                        {% for app in recent_applications %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar me-3">
+                                    {{ app.student.first_name[0] }}{{ app.student.last_name[0] }}
+                                </div>
+                                <div>
+                                    <strong>{{ app.student.full_name }}</strong>
+                                    <br><small class="text-muted">Applied to: {{ app.project.title }}</small>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('projects.manage_applications', project_id=app.project.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">Review</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No pending applications.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Student Progress -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Student Progress Overview</h5>
+                </div>
+                <div class="card-body">
+                    {% if student_progress %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Project</th>
+                                    <th>Contributions</th>
+                                    <th>Last Active</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for progress in student_progress %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-sm me-2">
+                                                {{ progress.student.first_name[0] }}{{ progress.student.last_name[0] }}
+                                            </div>
+                                            {{ progress.student.full_name }}
+                                        </div>
+                                    </td>
+                                    <td>{{ progress.project.title }}</td>
+                                    <td>{{ progress.contribution_count }}</td>
+                                    <td>{{ progress.last_active.strftime('%b %d') if progress.last_active else 'Never' }}</td>
+                                    <td>
+                                        {% if progress.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No students enrolled in projects yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('dashboard.view_all_students') }}" class="btn btn-primary">
+                            <i class="bi bi-people me-2"></i>View All Students
+                        </a>
+                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-success">
+                            <i class="bi bi-folder me-2"></i>Browse Student Projects
+                        </a>
+                        <a href="{{ url_for('dashboard.reports') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-bar-chart me-2"></i>View Reports
+                        </a>
+                        <a href="{{ url_for('dashboard.grading_overview') }}" class="btn btn-outline-warning">
+                            <i class="bi bi-mortarboard me-2"></i>Grading
+                        </a>
+                        <a href="{{ url_for('notifications.view_all') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-bell me-2"></i>Notifications
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Deadlines -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Deadlines</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if upcoming_deadlines %}
+                    {% for deadline in upcoming_deadlines %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ deadline.title }}</strong>
+                                <br><small class="text-muted">{{ deadline.project.title }}</small>
+                            </div>
+                            <span class="{% if deadline.is_overdue %}text-danger{% elif deadline.is_soon %}text-warning{% else %}text-muted{% endif %}">
+                                {{ deadline.due_date.strftime('%b %d') }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="list-group-item text-muted">No upcoming deadlines.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <!-- Recent Submissions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-inbox me-2"></i>Recent Submissions</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if recent_submissions %}
+                    {% for submission in recent_submissions %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ submission.milestone.title }}</strong>
+                                <br><small class="text-muted">by {{ submission.submitted_by.full_name }}</small>
+                            </div>
+                            <a href="{{ url_for('collaboration.view_submission', project_id=submission.milestone.project.id, submission_id=submission.id) }}" 
+                               class="btn btn-sm btn-outline-primary">Review</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="list-group-item text-muted">No recent submissions.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <!-- Project Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Project Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="project-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">
+                                <span class="stat-dot bg-success"></span> Completed
+                            </span>
+                            <span class="stat-value">{{ project_stats.completed }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">
+                                <span class="stat-dot bg-primary"></span> In Progress
+                            </span>
+                            <span class="stat-value">{{ project_stats.in_progress }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">
+                                <span class="stat-dot bg-info"></span> Open
+                            </span>
+                            <span class="stat-value">{{ project_stats.open }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">
+                                <span class="stat-dot bg-secondary"></span> Closed
+                            </span>
+                            <span class="stat-value">{{ project_stats.closed }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.stat-content h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+}
+
+.project-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #333;
+}
+</style>
+{% endblock %}

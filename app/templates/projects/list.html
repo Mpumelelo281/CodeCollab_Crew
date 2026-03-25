@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Projects - ColabPlatform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <h1 class="page-title">Browse Projects</h1>
+        <p class="page-subtitle">Discover opportunities that match your interests and skills</p>
+    </div>
+    
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="sidebar">
+                <h5 class="mb-3"><i class="bi bi-funnel me-2"></i>Filters</h5>
+                
+                <form method="GET" action="{{ url_for('projects.list_projects') }}" class="filter-form">
+                    <!-- Search -->
+                    <div class="mb-3">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="search" class="form-control" 
+                               placeholder="Search projects..." value="{{ current_filters.search or '' }}">
+                    </div>
+                    
+                    <!-- Department -->
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <select name="department" class="form-select">
+                            <option value="">All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if current_filters.department == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Course -->
+                    <div class="mb-3">
+                        <label class="form-label">Course</label>
+                        <select name="course" class="form-select">
+                            <option value="">All Courses</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if current_filters.course == course.id %}selected{% endif %}>
+                                {{ course.code }} - {{ course.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="open" {% if current_filters.status == 'open' %}selected{% endif %}>Open</option>
+                            <option value="in_progress" {% if current_filters.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort -->
+                    <div class="mb-3">
+                        <label class="form-label">Sort By</label>
+                        <select name="sort" class="form-select">
+                            <option value="newest" {% if current_filters.sort == 'newest' %}selected{% endif %}>Newest First</option>
+                            <option value="oldest" {% if current_filters.sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                            <option value="deadline" {% if current_filters.sort == 'deadline' %}selected{% endif %}>Deadline</option>
+                            <option value="title" {% if current_filters.sort == 'title' %}selected{% endif %}>Title A-Z</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Project List -->
+        <div class="col-lg-9">
+            {% if projects.items %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <p class="text-muted mb-0">
+                    Showing {{ projects.items|length }} of {{ projects.total }} projects
+                </p>
+            </div>
+            
+            <div class="row g-4">
+                {% for project in projects.items %}
+                <div class="col-md-6">
+                    <div class="card project-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="status-badge status-{{ project.status }}">
+                                    {{ project.status.replace('_', ' ') }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="bi bi-people me-1"></i>{{ project.team_count }} members
+                                </span>
+                            </div>
+                            
+                            <h5 class="card-title">
+                                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" 
+                                   class="text-decoration-none text-dark stretched-link">
+                                    {{ project.title }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted">
+                                {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
+                            </p>
+                            
+                            <div class="mb-3">
+                                {% for skill in project.skills[:4] %}
+                                <span class="skill-tag">{{ skill.name }}</span>
+                                {% endfor %}
+                                {% if project.skills|length > 4 %}
+                                <span class="skill-tag">+{{ project.skills|length - 4 }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if project.get_department() %}
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-building me-1"></i>{{ project.get_department().name }}
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center text-muted small">
+                                <span><i class="bi bi-person me-1"></i>{{ project.owner.full_name }}</span>
+                                {% if project.application_deadline %}
+                                <span>
+                                    <i class="bi bi-clock me-1"></i>
+                                    Apply by {{ project.application_deadline.strftime('%b %d, %Y') }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="progress flex-grow-1 me-3" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ project.progress }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ project.progress }}%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if projects.pages > 1 %}
+            <nav class="mt-4" aria-label="Project pagination">
+                <ul class="pagination justify-content-center">
+                    {% if projects.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('projects.list_projects', page=projects.prev_num, **current_filters) }}">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page in projects.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page %}
+                    <li class="page-item {% if page == projects.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('projects.list_projects', page=page, **current_filters) }}">
+                            {{ page }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if projects.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('projects.list_projects', page=projects.next_num, **current_filters) }}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-folder-x"></i>
+                </div>
+                <h4>No Projects Found</h4>
+                <p class="text-muted">Try adjusting your filters or check back later for new opportunities.</p>
+                {% if current_user.is_authenticated and current_user.is_student %}
+                <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Create a Project
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

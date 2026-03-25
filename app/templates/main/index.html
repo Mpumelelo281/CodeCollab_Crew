@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}CodeCollab Crew - Student-Faculty Collaboration{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center hero-content">
+                <h1 class="fw-bold mb-4">
+                    Connect, Collaborate, Create
+                </h1>
+                <p class="lead mb-5">
+                    Join the premier platform for student-faculty collaboration. 
+                    Discover meaningful projects, build your portfolio, and work with leading academics.
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-5 py-3">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+                    </a>
+                    <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-light btn-lg px-5 py-3">
+                        <i class="bi bi-search me-2"></i>Browse Projects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Why Choose CodeCollab Crew?</h2>
+            <p class="text-muted">Everything you need for successful academic collaborations</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex p-3 mb-3">
+                            <i class="bi bi-search fs-2 text-primary"></i>
+                        </div>
+                        <h5>Discover Projects</h5>
+                        <p class="text-muted">
+                            Search and filter through diverse faculty-led projects. 
+                            Find opportunities matching your skills and interests.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex p-3 mb-3">
+                            <i class="bi bi-people fs-2 text-success"></i>
+                        </div>
+                        <h5>Collaborate Effectively</h5>
+                        <p class="text-muted">
+                            Work together with version-controlled documents, 
+                            milestone tracking, and transparent contribution logs.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex p-3 mb-3">
+                            <i class="bi bi-graph-up fs-2 text-warning"></i>
+                        </div>
+                        <h5>Track Progress</h5>
+                        <p class="text-muted">
+                            Monitor milestones, receive timely notifications, 
+                            and get feedback from faculty mentors.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Projects -->
+{% if featured_projects %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Featured Projects</h2>
+                <p class="text-muted mb-0">Explore open opportunities</p>
+            </div>
+            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-primary">
+                View All <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row g-4">
+            {% for project in featured_projects %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card project-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="status-badge status-{{ project.status }}">{{ project.status.replace('_', ' ') }}</span>
+                            <small class="text-muted">{{ project.team_count }}/{{ project.max_team_size }}</small>
+                        </div>
+                        <h5 class="card-title">
+                            <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="text-decoration-none text-dark">
+                                {{ project.title }}
+                            </a>
+                        </h5>
+                        <p class="card-text">{{ project.description[:150] }}{% if project.description|length > 150 %}...{% endif %}</p>
+                        
+                        <div class="mb-3">
+                            {% for skill in project.skills[:3] %}
+                            <span class="skill-tag">{{ skill.name }}</span>
+                            {% endfor %}
+                            {% if project.skills|length > 3 %}
+                            <span class="skill-tag">+{{ project.skills|length - 3 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center text-muted small">
+                            <span><i class="bi bi-person me-1"></i>{{ project.owner.full_name }}</span>
+                            {% if project.application_deadline %}
+                            <span><i class="bi bi-clock me-1"></i>{{ project.application_deadline.strftime('%b %d') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pt-0">
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ project.progress }}%;" 
+                                 aria-valuenow="{{ project.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">{{ project.progress }}% complete</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Departments -->
+{% if departments %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Departments</h2>
+            <p class="text-muted">Collaborate across disciplines</p>
+        </div>
+        
+        <div class="row g-3 justify-content-center">
+            {% for dept in departments[:6] %}
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="card text-center p-3 h-100 border-0 shadow-sm">
+                    <div class="card-body p-2">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex p-2 mb-2">
+                            <i class="bi bi-building fs-4 text-primary"></i>
+                        </div>
+                        <h6 class="mb-0">{{ dept.code }}</h6>
+                        <small class="text-muted">{{ dept.name }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center py-4">
+        <h2 class="fw-bold mb-3">Ready to Start Collaborating?</h2>
+        <p class="lead mb-4">Join hundreds of students and faculty members already working on impactful projects.</p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-5">
+            Create Your Account <i class="bi bi-arrow-right ms-2"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}

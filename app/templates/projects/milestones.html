@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Milestones - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</a></li>
+                <li class="breadcrumb-item active">Milestones</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Project Milestones</h1>
+                <p class="page-subtitle">Track project progress and deadlines</p>
+            </div>
+            {% if current_user.id == project.owner_id %}
+            <a href="{{ url_for('projects.create_milestone', project_id=project.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Add Milestone
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if milestones %}
+    <div class="row">
+        {% for milestone in milestones %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if milestone.status == 'completed' %}border-success{% elif milestone.is_overdue %}border-danger{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {% if milestone.status == 'completed' %}
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        {% elif milestone.is_overdue %}
+                        <i class="bi bi-exclamation-circle-fill text-danger me-2"></i>
+                        {% else %}
+                        <i class="bi bi-flag me-2"></i>
+                        {% endif %}
+                        {{ milestone.title }}
+                    </h5>
+                    <span class="badge 
+                        {% if milestone.status == 'completed' %}bg-success
+                        {% elif milestone.status == 'in_progress' %}bg-primary
+                        {% elif milestone.is_overdue %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {% if milestone.is_overdue and milestone.status != 'completed' %}
+                            Overdue
+                        {% else %}
+                            {{ milestone.status|replace('_', ' ')|title }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if milestone.description %}
+                    <p class="text-muted">{{ milestone.description }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between text-muted small mb-3">
+                        <span>
+                            <i class="bi bi-calendar me-1"></i>
+                            Due: {{ milestone.due_date.strftime('%b %d, %Y') if milestone.due_date else 'No deadline' }}
+                        </span>
+                        {% if milestone.assigned_to %}
+                        <span>
+                            <i class="bi bi-person me-1"></i>
+                            {{ milestone.assigned_to.first_name }} {{ milestone.assigned_to.last_name }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if milestone.progress is defined %}
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar 
+                            {% if milestone.status == 'completed' %}bg-success
+                            {% elif milestone.is_overdue %}bg-danger
+                            {% else %}bg-primary{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ milestone.progress|default(0) }}%">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group btn-group-sm w-100">
+                        {% if milestone.status != 'completed' and (current_user.id == project.owner_id or current_user.id == milestone.assigned_to_id) %}
+                        <form action="{{ url_for('projects.update_milestone_status', project_id=project.id, milestone_id=milestone.id) }}" 
+                              method="POST" class="d-inline flex-fill">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check me-1"></i>Mark Complete
+                            </button>
+                        </form>
+                        {% elif milestone.status == 'completed' %}
+                        <span class="btn btn-outline-success w-100 disabled">
+                            <i class="bi bi-check-circle me-1"></i>Completed
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-flag display-1 text-muted"></i>
+            <h3 class="mt-3">No Milestones Yet</h3>
+            <p class="text-muted">Milestones help track progress toward project goals.</p>
+            {% if current_user.id == project.owner_id %}
+            <a href="{{ url_for('projects.create_milestone', project_id=project.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Create First Milestone
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Project
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-bell-fill me-2"></i>Notification Settings</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <h6 class="text-muted mb-3">Email Notifications</h6>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_projects" name="email_projects" checked>
+                            <label class="form-check-label" for="email_projects">
+                                Project updates
+                            </label>
+                            <small class="d-block text-muted">When there are updates to projects you're involved in</small>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_invitations" name="email_invitations" checked>
+                            <label class="form-check-label" for="email_invitations">
+                                Invitations
+                            </label>
+                            <small class="d-block text-muted">When someone invites you to join a project</small>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_tasks" name="email_tasks" checked>
+                            <label class="form-check-label" for="email_tasks">
+                                Task assignments
+                            </label>
+                            <small class="d-block text-muted">When you're assigned a new task</small>
+                        </div>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_mentions" name="email_mentions" checked>
+                            <label class="form-check-label" for="email_mentions">
+                                Mentions
+                            </label>
+                            <small class="d-block text-muted">When someone mentions you in a comment</small>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="text-muted mb-3">In-App Notifications</h6>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="app_all" name="app_all" checked>
+                            <label class="form-check-label" for="app_all">
+                                Enable all in-app notifications
+                            </label>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('dashboard.profile') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Profile
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

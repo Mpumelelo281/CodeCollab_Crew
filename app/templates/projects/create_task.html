@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Create Task - {{ project.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.my_projects') }}">My Projects</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects.view_tasks', project_id=project.id) }}">Tasks</a></li>
+                <li class="breadcrumb-item active">Create Task</li>
+            </ol>
+        </nav>
+        <h1 class="page-title">Create New Task</h1>
+        <p class="page-subtitle">Add a task to "{{ project.title }}"</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projects.create_task', project_id=project.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   placeholder="Enter task title">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"
+                                      placeholder="Describe the task in detail..."></textarea>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label for="assigned_to_id" class="form-label">Assign To</label>
+                                <select class="form-select" id="assigned_to_id" name="assigned_to_id">
+                                    <option value="">Unassigned</option>
+                                    <option value="{{ project.owner.id }}">{{ project.owner.full_name }} (Owner)</option>
+                                    {% for member in members %}
+                                    <option value="{{ member.user.id }}">
+                                        {{ member.user.full_name }}
+                                        {% if member.user.availability_status == 'available' %}(Available){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="milestone_id" class="form-label">Link to Milestone</label>
+                                <select class="form-select" id="milestone_id" name="milestone_id">
+                                    <option value="">No milestone</option>
+                                    {% for milestone in milestones %}
+                                    <option value="{{ milestone.id }}">{{ milestone.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Create Task
+                            </button>
+                            <a href="{{ url_for('projects.view_tasks', project_id=project.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

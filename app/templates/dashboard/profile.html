@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <div class="avatar mx-auto mb-3" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ user.first_name[0] }}{{ user.last_name[0] }}
+                    </div>
+                    <h4>{{ user.full_name }}</h4>
+                    <p class="text-muted mb-2">{{ user.email }}</p>
+                    {% if user.is_student %}
+                    <span class="badge bg-primary">Student</span>
+                    {% else %}
+                    <span class="badge bg-success">Lecturer</span>
+                    {% endif %}
+                    {% if user.department %}
+                    <p class="text-muted mt-2 mb-0">
+                        <i class="bi bi-building me-1"></i>{{ user.department.name }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('dashboard.edit_profile') }}" class="btn btn-primary w-100">
+                        <i class="bi bi-pencil me-2"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Contact Info</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="bi bi-envelope me-2 text-muted"></i>
+                        {{ user.email }}
+                    </li>
+                    {% if user.phone %}
+                    <li class="list-group-item">
+                        <i class="bi bi-telephone me-2 text-muted"></i>
+                        {{ user.phone }}
+                    </li>
+                    {% endif %}
+                    {% if user.student_id %}
+                    <li class="list-group-item">
+                        <i class="bi bi-card-text me-2 text-muted"></i>
+                        Student ID: {{ user.student_id }}
+                    </li>
+                    {% elif user.employee_id %}
+                    <li class="list-group-item">
+                        <i class="bi bi-card-text me-2 text-muted"></i>
+                        Employee ID: {{ user.employee_id }}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <!-- Skills -->
+            {% if user.skills %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Skills</h5>
+                </div>
+                <div class="card-body">
+                    {% for skill in user.skills %}
+                    <span class="badge bg-primary me-1 mb-1">{{ skill.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-8">
+            <!-- Bio -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-file-person me-2"></i>About Me</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.bio %}
+                    <p>{{ user.bio }}</p>
+                    {% else %}
+                    <p class="text-muted">No bio added yet. <a href="{{ url_for('dashboard.edit_profile') }}">Add one now!</a></p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        {% if user.is_student %}
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary mb-0">{{ stats.active_projects }}</h3>
+                                <small class="text-muted">Active Projects</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-success mb-0">{{ stats.completed_projects }}</h3>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-info mb-0">{{ stats.total_contributions }}</h3>
+                                <small class="text-muted">Contributions</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-warning mb-0">{{ stats.total_hours }}</h3>
+                                <small class="text-muted">Hours Logged</small>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary mb-0">{{ stats.owned_projects }}</h3>
+                                <small class="text-muted">Total Projects</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-info mb-0">{{ stats.active_projects }}</h3>
+                                <small class="text-muted">Active</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-success mb-0">{{ stats.completed_projects }}</h3>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-warning mb-0">{{ stats.total_students }}</h3>
+                                <small class="text-muted">Students Mentored</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Account Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-key me-2"></i>Change Password
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('notifications.settings') }}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-bell me-2"></i>Notification Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

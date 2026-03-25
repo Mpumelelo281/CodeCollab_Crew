@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}My Projects - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">My Projects</h1>
+                <p class="page-subtitle">Projects you own or are a member of</p>
+            </div>
+            {% if current_user.is_student %}
+            <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create Project
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tabs for different project views -->
+    <ul class="nav nav-tabs mb-4" id="projectTabs" role="tablist">
+        {% if owned_projects %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="owned-tab" data-bs-toggle="tab" data-bs-target="#owned" 
+                    type="button" role="tab" aria-controls="owned" aria-selected="true">
+                <i class="bi bi-folder me-2"></i>My Projects
+                <span class="badge bg-primary ms-2">{{ owned_projects|length }}</span>
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if not owned_projects %}active{% endif %}" id="member-tab" data-bs-toggle="tab" 
+                    data-bs-target="#member" type="button" role="tab" aria-controls="member" 
+                    aria-selected="{% if not owned_projects %}true{% else %}false{% endif %}">
+                <i class="bi bi-people me-2"></i>Collaborations
+                <span class="badge bg-secondary ms-2">{{ member_projects|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="invitations-tab" data-bs-toggle="tab" data-bs-target="#invitations" 
+                    type="button" role="tab" aria-controls="invitations" aria-selected="false">
+                <i class="bi bi-envelope me-2"></i>Invitations
+                {% if pending_invitations %}<span class="badge bg-warning ms-2">{{ pending_invitations|length }}</span>{% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="applications-tab" data-bs-toggle="tab" data-bs-target="#applications" 
+                    type="button" role="tab" aria-controls="applications" aria-selected="false">
+                <i class="bi bi-send me-2"></i>My Applications
+                <span class="badge bg-info ms-2">{{ pending_applications|length }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="projectTabsContent">
+        <!-- Owned Projects Tab -->
+        {% if owned_projects %}
+        <div class="tab-pane fade show active" id="owned" role="tabpanel" aria-labelledby="owned-tab">
+            <div class="row g-4">
+                {% for project in owned_projects %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card project-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="status-badge status-{{ project.status }}">
+                                    {{ project.status.replace('_', ' ') }}
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="bi bi-people me-1"></i>{{ project.members.count() }} members
+                                </span>
+                            </div>
+                            <h5 class="card-title">
+                                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="text-decoration-none">
+                                    {{ project.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small">{{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}</p>
+                            {% if project.skills %}
+                            <div class="mb-2">
+                                {% for skill in project.skills[:3] %}
+                                <span class="skill-tag">{{ skill.name }}</span>
+                                {% endfor %}
+                                {% if project.skills|length > 3 %}
+                                <span class="text-muted small">+{{ project.skills|length - 3 }} more</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {% if project.application_deadline %}
+                                    <i class="bi bi-calendar me-1"></i>Deadline: {{ project.application_deadline.strftime('%b %d, %Y') }}
+                                    {% else %}
+                                    <i class="bi bi-calendar me-1"></i>No deadline
+                                    {% endif %}
+                                </small>
+                                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                    Manage
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Member Projects Tab -->
+        <div class="tab-pane fade {% if not owned_projects %}show active{% endif %}" id="member" role="tabpanel" aria-labelledby="member-tab">
+            {% if member_projects %}
+            <div class="row g-4">
+                {% for project in member_projects %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card project-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="status-badge status-{{ project.status }}">
+                                    {{ project.status.replace('_', ' ') }}
+                                </span>
+                                <span class="badge bg-secondary">Member</span>
+                            </div>
+                            <h5 class="card-title">
+                                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="text-decoration-none">
+                                    {{ project.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small">{{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}</p>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-person me-1"></i>Owner: {{ project.owner.full_name }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i>Created {{ project.created_at.strftime('%b %d, %Y') }}
+                                </small>
+                                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-folder2-open empty-state-icon"></i>
+                <h5>No Project Memberships</h5>
+                <p class="text-muted">You haven't joined any projects yet.</p>
+                <a href="{{ url_for('projects.list_projects') }}" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Browse Projects
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Invitations Tab -->
+        <div class="tab-pane fade" id="invitations" role="tabpanel" aria-labelledby="invitations-tab">
+            <!-- Send Invitations Section -->
+            {% if owned_projects %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Invite Members to Your Projects</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Select a project to invite collaborators:</p>
+                    <div class="row g-3">
+                        {% for project in owned_projects %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ project.title }}</h6>
+                                    <p class="card-text small text-muted mb-2">{{ project.team_count }} members</p>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <a href="{{ url_for('projects.invite_members', project_id=project.id) }}" class="btn btn-primary btn-sm w-100">
+                                        <i class="bi bi-person-plus me-1"></i>Invite Members
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Received Invitations Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Received Invitations</h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_invitations %}
+                    <div class="row g-4">
+                        {% for invitation in pending_invitations %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-warning text-dark">Invitation</span>
+                                <small class="text-muted">{{ invitation.created_at.strftime('%b %d, %Y') }}</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ invitation.project.title }}</h5>
+                            <p class="card-text text-muted small">
+                                {{ invitation.project.description[:100] }}{% if invitation.project.description|length > 100 %}...{% endif %}
+                            </p>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-person me-1"></i>Invited by: {{ invitation.invited_by.full_name }}
+                                </small>
+                            </div>
+                            {% if invitation.message %}
+                            <div class="alert alert-light small mb-2">
+                                "{{ invitation.message }}"
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2">
+                                <form action="{{ url_for('projects.accept_invitation', invitation_id=invitation.id) }}" method="POST" class="flex-grow-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-check-circle me-1"></i>Accept
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('projects.decline_invitation', invitation_id=invitation.id) }}" method="POST" class="flex-grow-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="bi bi-x-circle me-1"></i>Decline
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-envelope-open text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2 mb-0">No pending invitations.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Applications Tab -->
+        <div class="tab-pane fade" id="applications" role="tabpanel" aria-labelledby="applications-tab">
+            {% if pending_applications %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Applied On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in pending_applications %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('projects.view_project', project_id=application.project.id) }}">
+                                    {{ application.project.title }}
+                                </a>
+                                <br>
+                                <small class="text-muted">by {{ application.project.owner.full_name }}</small>
+                            </td>
+                            <td>{{ application.applied_at.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                {% if application.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif application.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif application.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ application.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('projects.view_project', project_id=application.project.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">View Project</a>
+                                {% if application.status == 'pending' %}
+                                <form action="{{ url_for('projects.withdraw_application', application_id=application.id) }}" 
+                                      method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Are you sure you want to withdraw this application?')">
+                                        Withdraw
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-send empty-state-icon"></i>
+                <h5>No Pending Applications</h5>
+                <p class="text-muted">You don't have any pending project applications.</p>
+                <a href="{{ url_for('projects.list_projects') }}" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Find Projects
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle hash navigation for tabs
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if URL has a hash
+    const hash = window.location.hash;
+    if (hash) {
+        // Find the tab button that corresponds to this hash
+        const tabTrigger = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (tabTrigger) {
+            const tab = new bootstrap.Tab(tabTrigger);
+            tab.show();
+        }
+    }
+    
+    // Update URL hash when tab changes
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(tabEl) {
+        tabEl.addEventListener('shown.bs.tab', function(event) {
+            const targetId = event.target.getAttribute('data-bs-target');
+            history.replaceState(null, null, targetId);
+        });
+    });
+});
+</script>
+{% endblock %}
