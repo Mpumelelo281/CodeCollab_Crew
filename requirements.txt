@@ -40,11 +40,7 @@ faker==20.1.0
 
 # Production
 gunicorn==21.2.0
-<<<<<<< HEAD
-psycopg2-binary
-=======
 psycopg2-binary==2.9.9
->>>>>>> d426af4c4b137197e62d2818e23f68bf15b59d63
 
 # Development
 flask-debugtoolbar==0.14.1
