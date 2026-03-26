@@ -31,6 +31,13 @@ def is_allowed_institutional_email(email):
     return domain in allowed_domains
 
 
+def find_user_by_email(raw_email):
+    """Find a user by raw or normalized institutional email."""
+    normalized_email = normalize_institutional_email(raw_email)
+    raw_email = (raw_email or '').strip().lower()
+    return User.query.filter(User.email.in_([normalized_email, raw_email])).first()
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login."""
@@ -39,7 +46,7 @@ def login():
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        user = find_user_by_email(form.email.data)
         
         if user and user.check_password(form.password.data):
             if not user.is_active:
@@ -221,8 +228,7 @@ def resend_verification():
     
     if request.method == 'POST':
         raw_email = (request.form.get('email', '') or '').strip().lower()
-        email = normalize_institutional_email(raw_email)
-        user = User.query.filter(User.email.in_([email, raw_email])).first()
+        user = find_user_by_email(raw_email)
         
         if user and not user.is_verified:
             try:
@@ -248,9 +254,7 @@ def forgot_password():
     
     form = ForgotPasswordForm()
     if form.validate_on_submit():
-        raw_email = (form.email.data or '').strip().lower()
-        email = normalize_institutional_email(form.email.data)
-        user = User.query.filter(User.email.in_([email, raw_email])).first()
+        user = find_user_by_email(form.email.data)
         
         # Always show success message to prevent email enumeration
         flash('If an account with that email exists, a password reset link has been sent.', 'info')
