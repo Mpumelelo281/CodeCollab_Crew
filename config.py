@@ -61,7 +61,13 @@ class Config:
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@colabplatform.edu')
+    MAIL_DEFAULT_SENDER = (
+        os.environ.get('MAIL_DEFAULT_SENDER')
+        or os.environ.get('MAIL_USERNAME')
+        or 'noreply@colabplatform.edu'
+    )
+    # Serverless runtimes can finish requests before background email threads complete.
+    MAIL_ASYNC = (not IS_VERCEL) and (os.environ.get('MAIL_ASYNC', 'true').lower() in ['true', '1', 't'])
     APP_BASE_URL = os.environ.get('APP_BASE_URL', '').strip()
     INSTITUTION_EMAIL_DOMAINS = tuple(
         domain.strip().lower()

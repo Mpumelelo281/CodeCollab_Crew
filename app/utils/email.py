@@ -84,10 +84,8 @@ def send_verification_email(user):
     text_body = render_template('emails/verification_email.txt', user=user, verify_url=verify_url)
     html_body = render_template('emails/verification_email.html', user=user, verify_url=verify_url)
 
-    # Use the requested outgoing address as sender. Fall back to config default if needed.
-    sender = 'ngobesempumelelo2@gmail.com'
-    if current_app.config.get('MAIL_DEFAULT_SENDER'):
-        sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    # Use configured sender to avoid mismatches rejected by SMTP providers.
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
 
     send_email(subject, [user.email], text_body, html_body, sender=sender)
 
