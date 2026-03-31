@@ -31,6 +31,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _normalize_database_url(_raw_database_url) or 'sqlite:///colabplatform.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
+    # Keep connections healthy on serverless / Neon Postgres (drops idle SSL).
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,       # test connection before each use
+        'pool_recycle': 280,         # recycle connections every ~5 min
+        'pool_size': 5,
+        'max_overflow': 10,
+    }
     
     # Security
     WTF_CSRF_ENABLED = True
