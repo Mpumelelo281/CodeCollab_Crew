@@ -45,11 +45,12 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="role" class="form-label">I am a</label>
-                                {{ form.role(class="form-select", required=true) }}
+                                {{ form.role(class="form-select", required=true, id="role-select") }}
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="institution_id" class="form-label">Student/Employee ID</label>
-                                {{ form.institution_id(class="form-control", placeholder="STU123456", required=true) }}
+                            <div class="col-md-6 mb-3" id="institution-id-group">
+                                <label for="institution_id" class="form-label" id="institution-id-label">Student ID <span class="text-danger" id="id-required-star">*</span></label>
+                                {{ form.institution_id(class="form-control", placeholder="STU123456", id="institution-id-input") }}
+                                <div class="form-text" id="institution-id-help">Required for students</div>
                                 {% if form.institution_id.errors %}
                                 <div class="invalid-feedback d-block">{{ form.institution_id.errors[0] }}</div>
                                 {% endif %}
@@ -116,10 +117,32 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.querySelector('input[name="email"]');
-    const idInput = document.querySelector('input[name="institution_id"]');
-    const roleSelect = document.querySelector('select[name="role"]');
+    const idInput = document.getElementById('institution-id-input');
+    const roleSelect = document.getElementById('role-select');
+    const idLabel = document.getElementById('institution-id-label');
+    const idGroup = document.getElementById('institution-id-group');
+    const idHelp = document.getElementById('institution-id-help');
+    const idRequiredStar = document.getElementById('id-required-star');
 
-    if (!emailInput || !idInput) return;
+    if (!emailInput || !idInput || !roleSelect) return;
+
+    function updateIdFieldForRole() {
+        const isStudent = roleSelect.value === 'student';
+        
+        if (isStudent) {
+            // Students must provide ID
+            idLabel.innerHTML = 'Student ID <span class="text-danger" id="id-required-star">*</span>';
+            idInput.placeholder = 'e.g. 22012345';
+            idInput.required = true;
+            idHelp.textContent = 'Required for students';
+        } else {
+            // Lecturers - ID is optional
+            idLabel.innerHTML = 'Employee ID <span class="text-muted">(optional)</span>';
+            idInput.placeholder = 'e.g. EMP12345 (optional)';
+            idInput.required = false;
+            idHelp.textContent = 'Optional for lecturers';
+        }
+    }
 
     function tryFillFromEmail() {
         // Only auto-fill for students. Keep lecturer field manually editable.
@@ -133,11 +156,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    roleSelect.addEventListener('change', function() {
+        updateIdFieldForRole();
+        tryFillFromEmail();
+    });
     emailInput.addEventListener('input', tryFillFromEmail);
     emailInput.addEventListener('blur', tryFillFromEmail);
-    if (roleSelect) roleSelect.addEventListener('change', tryFillFromEmail);
 
-    // Also run once in case browser autofill already populated email.
+    // Initialize on page load
+    updateIdFieldForRole();
     tryFillFromEmail();
 });
 </script>

@@ -48,6 +48,14 @@ def login():
     if form.validate_on_submit():
         user = find_user_by_email(form.email.data)
         
+        # --- temporary debug (remove after fixing) ---
+        if user:
+            current_app.logger.info(f'LOGIN DEBUG: user found id={user.id} email={user.email} verified={user.is_verified} active={user.is_active}')
+            current_app.logger.info(f'LOGIN DEBUG: password check = {user.check_password(form.password.data)}')
+        else:
+            current_app.logger.info(f'LOGIN DEBUG: NO user found for input "{form.email.data}"')
+        # --- end debug ---
+        
         if user and user.check_password(form.password.data):
             if not user.is_active:
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
@@ -133,11 +141,11 @@ def register():
             m = re.search(r"(\d+)", local)
             provided_id = m.group(1) if m else ''
 
-        if not provided_id:
-            flash('Please provide a valid Student/Employee ID or use an email whose first digits are your ID.', 'danger')
-            return render_template('auth/register.html', form=form)
-
         if form.role.data == 'student':
+            # Student ID is required for students
+            if not provided_id:
+                flash('Please provide a valid Student ID or use an email whose first digits are your ID.', 'danger')
+                return render_template('auth/register.html', form=form)
             if User.query.filter_by(student_id=provided_id).first():
                 flash('A student account with that Student ID already exists.', 'danger')
                 return render_template('auth/register.html', form=form)
@@ -146,10 +154,12 @@ def register():
             if student_role:
                 user.roles.append(student_role)
         else:
-            if User.query.filter_by(employee_id=provided_id).first():
-                flash('A lecturer account with that Employee ID already exists.', 'danger')
-                return render_template('auth/register.html', form=form)
-            user.employee_id = provided_id
+            # Employee ID is optional for lecturers
+            if provided_id:
+                if User.query.filter_by(employee_id=provided_id).first():
+                    flash('A lecturer account with that Employee ID already exists.', 'danger')
+                    return render_template('auth/register.html', form=form)
+                user.employee_id = provided_id
             lecturer_role = Role.query.filter_by(name='lecturer').first()
             if lecturer_role:
                 user.roles.append(lecturer_role)
