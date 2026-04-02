@@ -114,7 +114,7 @@ class User(UserMixin, db.Model):
     employee_id = db.Column(db.String(20), unique=True, index=True)  # For faculty
     phone = db.Column(db.String(20))
     bio = db.Column(db.Text)
-    avatar = db.Column(db.String(200))
+    avatar = db.Column(db.Text)  # Stores base64 data URL for profile picture
     
     # Status flags
     is_active = db.Column(db.Boolean, default=True)

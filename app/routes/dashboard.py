@@ -1,4 +1,5 @@
 """Dashboard and reporting routes."""
+import base64
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
@@ -399,6 +400,32 @@ def edit_profile():
         current_user.phone = form.phone.data
         current_user.bio = form.bio.data
         current_user.department_id = form.department.data if form.department.data != 0 else None
+        
+        # Handle avatar upload - store as base64 data URL
+        if form.avatar.data:
+            avatar_file = form.avatar.data
+            if avatar_file.filename:
+                # Read file and convert to base64
+                file_data = avatar_file.read()
+                # Check file size (max 2MB for profile pictures)
+                if len(file_data) > 2 * 1024 * 1024:
+                    flash('Profile picture must be less than 2MB.', 'danger')
+                    return render_template('dashboard/edit_profile.html',
+                                         form=form,
+                                         all_skills=all_skills)
+                
+                # Get the file extension for MIME type
+                filename = avatar_file.filename.lower()
+                if filename.endswith('.png'):
+                    mime_type = 'image/png'
+                elif filename.endswith('.gif'):
+                    mime_type = 'image/gif'
+                else:
+                    mime_type = 'image/jpeg'
+                
+                # Convert to base64 data URL
+                b64_data = base64.b64encode(file_data).decode('utf-8')
+                current_user.avatar = f'data:{mime_type};base64,{b64_data}'
         
         # Update skills
         current_user.skills.clear()

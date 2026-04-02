@@ -88,6 +88,13 @@
                             <!-- Profile Picture -->
                             <div class="col-12">
                                 <label for="avatar" class="form-label">Profile Picture</label>
+                                {% if current_user.avatar %}
+                                <div class="mb-2">
+                                    <img src="{{ current_user.avatar }}" alt="Current avatar" 
+                                         class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                                    <span class="text-muted ms-2">Current picture</span>
+                                </div>
+                                {% endif %}
                                 {{ form.avatar(class="form-control" + (" is-invalid" if form.avatar.errors else "")) }}
                                 {% if form.avatar.errors %}
                                 <div class="invalid-feedback">{{ form.avatar.errors[0] }}</div>
