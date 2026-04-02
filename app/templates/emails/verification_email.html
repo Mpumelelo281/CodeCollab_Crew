@@ -5,23 +5,146 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Verify Your Email</title>
     <style>
-        body { font-family: Arial, sans-serif; background:#f7fafc; color:#333; }
-        .container { max-width:600px; margin:24px auto; background:white; padding:24px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
-        .button { display:inline-block; padding:12px 20px; background:#2563eb; color:white; text-decoration:none; border-radius:6px; }
-        .footer { color:#6b7280; font-size:13px; margin-top:18px; }
-        a { color:#2563eb; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; 
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2); 
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: #4f46e5;
+            margin-bottom: 10px;
+        }
+        h2 { 
+            margin: 0;
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #4b5563;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .button { 
+            display: inline-block; 
+            padding: 18px 48px; 
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff !important; 
+            text-decoration: none; 
+            border-radius: 12px; 
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            box-shadow: 0 12px 28px rgba(79, 70, 229, 0.5);
+            transform: translateY(-2px);
+        }
+        .link-section {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+        }
+        .link-section p {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0 0 10px 0;
+        }
+        .link-section a {
+            color: #4f46e5;
+            word-break: break-all;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 30px 0;
+        }
+        .footer { 
+            color: #9ca3af; 
+            font-size: 14px; 
+            text-align: center;
+            line-height: 1.6;
+        }
+        .footer strong {
+            color: #6b7280;
+        }
+        .expiry-notice {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 25px 0;
+        }
+        .expiry-notice p {
+            margin: 0;
+            color: #92400e;
+            font-size: 14px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 style="margin-top:0;">Welcome to ColabPlatform</h2>
-        <p>Hello {{ user.first_name }},</p>
-        <p>Thanks for creating an account. Please verify your email address by clicking the button below:</p>
-        <p style="text-align:center;"><a href="{{ verify_url }}" class="button">Verify Email</a></p>
-        <p style="font-size:14px;">Or copy and paste this link into your browser:</p>
-        <p><a href="{{ verify_url }}">{{ verify_url }}</a></p>
-        <p class="footer">This link will expire in 24 hours. If you did not create an account, you can safely ignore this message.</p>
-        <p class="footer">Best regards,<br>The ColabPlatform Team</p>
+        <div class="header">
+            <div class="logo">🎓 ColabPlatform</div>
+            <h2>Verify Your Email Address</h2>
+        </div>
+        
+        <p class="greeting">Hello {{ user.first_name }},</p>
+        <p>Thanks for creating an account with ColabPlatform! To get started and access all features, please verify your email address by clicking the button below:</p>
+        
+        <div class="button-container">
+            <a href="{{ verify_url }}" class="button">✓ VERIFY EMAIL</a>
+        </div>
+        
+        <div class="link-section">
+            <p>Or copy and paste this link into your browser:</p>
+            <a href="{{ verify_url }}">{{ verify_url }}</a>
+        </div>
+        
+        <div class="expiry-notice">
+            <p>⏱️ This verification link will expire in <strong>24 hours</strong>.</p>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <p class="footer">
+            If you did not create an account, you can safely ignore this email.<br><br>
+            <strong>Best regards,</strong><br>
+            The ColabPlatform Team
+        </p>
     </div>
 </body>
 </html>

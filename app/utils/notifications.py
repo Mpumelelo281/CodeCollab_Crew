@@ -232,3 +232,93 @@ def delete_old_notifications(days=90):
     
     db.session.commit()
     return result
+
+
+def send_project_due_date_notifications():
+    """
+    Send notifications for approaching project due dates (end_date).
+    Notifies all active project members and the project owner when:
+    - 7 days before due date
+    - 3 days before due date
+    - 1 day before due date
+    
+    This should be run as a scheduled task (e.g., daily).
+    
+    Returns:
+        Number of notifications sent
+    """
+    from datetime import datetime, timezone, timedelta, date
+    from app.models import Project, ProjectMember
+    
+    today = date.today()
+    notifications_sent = 0
+    
+    # Define reminder intervals (days before due date)
+    reminder_days = [7, 3, 1]
+    
+    for days_before in reminder_days:
+        target_date = today + timedelta(days=days_before)
+        
+        # Find projects with end_date matching the target date
+        projects = Project.query.filter(
+            Project.end_date == target_date,
+            Project.status.in_(['open', 'in_progress'])  # Only active projects
+        ).all()
+        
+        for project in projects:
+            # Determine urgency message based on days remaining
+            if days_before == 1:
+                urgency = "tomorrow"
+                title = "🚨 Project Due Tomorrow!"
+            elif days_before == 3:
+                urgency = "in 3 days"
+                title = "⚠️ Project Due Soon"
+            else:
+                urgency = "in 7 days"
+                title = "📅 Upcoming Project Deadline"
+            
+            message = f'Project "{project.title}" is due {urgency} ({target_date.strftime("%B %d, %Y")}).'
+            action_url = f'/projects/{project.id}'
+            
+            # Get all recipients: active members + owner
+            recipients = set()
+            
+            # Add project owner
+            recipients.add(project.owner_id)
+            
+            # Add all active project members
+            members = ProjectMember.query.filter_by(
+                project_id=project.id,
+                status='active'
+            ).all()
+            
+            for member in members:
+                recipients.add(member.user_id)
+            
+            # Send notification to each recipient
+            for user_id in recipients:
+                # Check if notification already sent today for this project and days_before
+                now = datetime.now(timezone.utc)
+                existing = Notification.query.filter(
+                    Notification.user_id == user_id,
+                    Notification.project_id == project.id,
+                    Notification.notification_type == 'deadline',
+                    Notification.title == title,
+                    Notification.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0)
+                ).first()
+                
+                if existing:
+                    continue
+                
+                send_notification(
+                    user_id=user_id,
+                    title=title,
+                    message=message,
+                    notification_type='deadline',
+                    action_url=action_url,
+                    project_id=project.id,
+                    send_email=True
+                )
+                notifications_sent += 1
+    
+    return notifications_sent
