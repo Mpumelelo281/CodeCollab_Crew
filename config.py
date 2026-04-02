@@ -56,8 +56,8 @@ class Config:
     PASSWORD_REQUIRE_DIGIT = True
     PASSWORD_REQUIRE_SPECIAL = True
     
-    # File uploads
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    # File uploads - Vercel serverless functions have 4.5MB payload limit
+    MAX_CONTENT_LENGTH = 4 * 1024 * 1024 if IS_VERCEL else 16 * 1024 * 1024  # 4MB on Vercel, 16MB locally
     # Vercel file system is ephemeral; /tmp is writable per invocation.
     UPLOAD_FOLDER = '/tmp/uploads' if IS_VERCEL else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'zip', 'py', 'js', 'html', 'css'}
