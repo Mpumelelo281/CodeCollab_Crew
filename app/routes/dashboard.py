@@ -67,22 +67,49 @@ def student_dashboard():
         status='pending'
     ).count()
     
-    # Get upcoming deadlines (milestones)
+    # Get upcoming deadlines and overdue milestones
     upcoming_deadlines = []
+    now = datetime.now(timezone.utc)
     for project in projects:
         milestones = Milestone.query.filter_by(project_id=project.id)\
             .filter(Milestone.status != 'completed')\
-            .filter(Milestone.due_date >= datetime.now(timezone.utc))\
-            .filter(Milestone.due_date <= datetime.now(timezone.utc) + timedelta(days=14))\
             .order_by(Milestone.due_date).all()
         for m in milestones:
+            due = m.due_date
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            delta = due - now
+            days_diff = delta.days
+
+            if days_diff < 0:
+                days_left = f'Overdue by {abs(days_diff)} day{"s" if abs(days_diff) != 1 else ""}'
+                is_overdue = True
+                is_soon = False
+            elif days_diff == 0:
+                days_left = 'Due today'
+                is_overdue = False
+                is_soon = True
+            elif days_diff == 1:
+                days_left = 'Due tomorrow'
+                is_overdue = False
+                is_soon = True
+            else:
+                days_left = f'{days_diff} days left'
+                is_overdue = False
+                is_soon = days_diff <= 3
+
             upcoming_deadlines.append({
+                'title': m.title,
                 'milestone': m,
-                'project': project
+                'project': project,
+                'due_date': due,
+                'days_left': days_left,
+                'is_overdue': is_overdue,
+                'is_soon': is_soon
             })
     
-    # Sort deadlines by date
-    upcoming_deadlines.sort(key=lambda x: x['milestone'].due_date)
+    # Sort: overdue first (most overdue at top), then soonest upcoming
+    upcoming_deadlines.sort(key=lambda x: x['due_date'])
     
     # Get user's contribution stats
     total_contributions = Contribution.query.filter_by(user_id=current_user.id).count()

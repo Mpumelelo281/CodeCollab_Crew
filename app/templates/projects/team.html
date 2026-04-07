@@ -45,10 +45,15 @@
                         <div class="text-end">
                             <span class="badge bg-primary mb-1">Owner</span>
                             <br>
-                            <span class="badge bg-{{ 'success' if project.owner.availability_status == 'available' else 'warning' if project.owner.availability_status == 'busy' else 'secondary' }}">
-                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
-                                {{ project.owner.availability_status|capitalize }}
+                            {% if project.owner.is_online %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Online
                             </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Offline
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -67,10 +72,15 @@
                         <div class="text-end">
                             <span class="badge bg-secondary mb-1">{{ member.role|capitalize }}</span>
                             <br>
-                            <span class="badge bg-{{ 'success' if member.user.availability_status == 'available' else 'warning' if member.user.availability_status == 'busy' else 'secondary' }}">
-                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
-                                {{ member.user.availability_status|capitalize }}
+                            {% if member.user.is_online %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Online
                             </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Offline
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                     {% else %}

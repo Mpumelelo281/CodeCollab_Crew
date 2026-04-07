@@ -173,6 +173,16 @@ class User(UserMixin, db.Model):
         """Check if user is an admin."""
         return self.has_role('admin')
     
+    @property
+    def is_online(self):
+        """Check if user was active in the last 5 minutes."""
+        if not self.last_seen:
+            return False
+        last = self.last_seen
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - last).total_seconds() < 300
+
     def get_unread_notifications_count(self):
         """Get count of unread notifications."""
         return Notification.query.filter_by(user_id=self.id, is_read=False).count()
@@ -237,12 +247,31 @@ class Project(db.Model):
     
     @property
     def progress(self):
-        """Calculate project progress based on milestones."""
+        """Calculate project progress based on milestones and tasks.
+        
+        Uses milestones if any exist (completed / total).
+        Falls back to tasks if no milestones (completed / total).
+        Falls back to contribution-based estimate if neither exist.
+        """
+        # Primary: milestone-based progress
         milestones = self.milestones.all()
-        if not milestones:
-            return 0
-        completed = sum(1 for m in milestones if m.status == 'completed')
-        return int((completed / len(milestones)) * 100)
+        if milestones:
+            completed = sum(1 for m in milestones if m.status == 'completed')
+            return int((completed / len(milestones)) * 100)
+        
+        # Secondary: task-based progress
+        tasks = self.tasks.all()
+        if tasks:
+            completed = sum(1 for t in tasks if t.status == 'completed')
+            return int((completed / len(tasks)) * 100)
+        
+        # Tertiary: contribution-based estimate (has any work been done?)
+        contribution_count = self.contributions.count()
+        if contribution_count > 0:
+            # Cap at 50% since without milestones/tasks we can't measure completion
+            return min(int(contribution_count * 10), 50)
+        
+        return 0
     
     @property
     def team_count(self):
@@ -313,6 +342,37 @@ class Milestone(db.Model):
         if due.tzinfo is None:
             due = due.replace(tzinfo=timezone.utc)
         return datetime.now(timezone.utc) > due
+
+    @property
+    def days_overdue(self):
+        """Return number of days overdue, or 0 if not overdue."""
+        if self.status == 'completed' or not self.due_date:
+            return 0
+        due = self.due_date
+        if due.tzinfo is None:
+            due = due.replace(tzinfo=timezone.utc)
+        delta = (datetime.now(timezone.utc) - due).days
+        return max(delta, 0)
+
+    @property
+    def time_status(self):
+        """Human-readable time status string."""
+        if self.status == 'completed':
+            return 'Completed'
+        if not self.due_date:
+            return 'No deadline'
+        due = self.due_date
+        if due.tzinfo is None:
+            due = due.replace(tzinfo=timezone.utc)
+        delta = (due - datetime.now(timezone.utc)).days
+        if delta < 0:
+            return f'Overdue by {abs(delta)} day{"s" if abs(delta) != 1 else ""}'
+        elif delta == 0:
+            return 'Due today'
+        elif delta == 1:
+            return 'Due tomorrow'
+        else:
+            return f'{delta} days left'
     
     def __repr__(self):
         return f'<Milestone {self.title}>'

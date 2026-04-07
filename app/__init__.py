@@ -72,12 +72,20 @@ def create_app(config_name='default'):
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
     
+    # Update last_seen on every authenticated request
+    from datetime import datetime, timezone as tz
+
+    @app.before_request
+    def update_last_seen():
+        from flask_login import current_user as _cu
+        if _cu.is_authenticated:
+            _cu.last_seen = datetime.now(tz.utc)
+            db.session.commit()
+
     # Add context processor for global template variables
-    from datetime import datetime
-    
     @app.context_processor
     def inject_now():
-        return {'now': datetime.utcnow()}
+        return {'now': datetime.now(tz.utc)}
     
     return app
 

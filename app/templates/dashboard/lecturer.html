@@ -209,10 +209,14 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm me-2">
+                                            <div class="avatar avatar-sm me-2 position-relative">
                                                 {{ progress.student.first_name[0] }}{{ progress.student.last_name[0] }}
+                                                <span class="position-absolute bottom-0 end-0 rounded-circle border border-white" style="width: 10px; height: 10px; background: {{ '#28a745' if progress.student.is_online else '#6c757d' }};"></span>
                                             </div>
                                             {{ progress.student.full_name }}
+                                            {% if progress.student.is_online %}
+                                            <span class="badge bg-success ms-2" style="font-size: 0.65rem;">Online</span>
+                                            {% endif %}
                                         </div>
                                     </td>
                                     <td>{{ progress.project.title }}</td>
