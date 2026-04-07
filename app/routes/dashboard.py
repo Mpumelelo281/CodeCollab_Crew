@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import (User, Project, ProjectMember, Milestone, Contribution, 
                        ProjectApplication, Notification, Department, Skill, ProjectGrade,
-                       ProjectComment, ProjectUpdate)
+                       ProjectComment, ProjectUpdate, Role)
 from app.forms import ProfileForm
 from app.utils.decorators import lecturer_required, admin_required
 from sqlalchemy import func
@@ -465,9 +465,9 @@ def project_reports():
     
     dept_projects = []
     if current_user.department_id:
-        dept_student_ids = [u.id for u in User.query.filter_by(
-            department_id=current_user.department_id, role='student'
-        ).all()]
+        dept_student_ids = [u.id for u in User.query.filter(
+            User.department_id == current_user.department_id
+        ).join(User.roles).filter(Role.name == 'student').all()]
         dept_projects = Project.query.filter(
             Project.owner_id.in_(dept_student_ids)
         ).all() if dept_student_ids else []
@@ -516,9 +516,9 @@ def engagement_reports():
     
     dept_project_ids = []
     if current_user.department_id:
-        dept_student_ids = [u.id for u in User.query.filter_by(
-            department_id=current_user.department_id, role='student'
-        ).all()]
+        dept_student_ids = [u.id for u in User.query.filter(
+            User.department_id == current_user.department_id
+        ).join(User.roles).filter(Role.name == 'student').all()]
         if dept_student_ids:
             dept_project_ids = [p.id for p in Project.query.filter(
                 Project.owner_id.in_(dept_student_ids)
@@ -580,9 +580,9 @@ def grading_overview():
     
     dept_projects = []
     if current_user.department_id:
-        dept_student_ids = [u.id for u in User.query.filter_by(
-            department_id=current_user.department_id, role='student'
-        ).all()]
+        dept_student_ids = [u.id for u in User.query.filter(
+            User.department_id == current_user.department_id
+        ).join(User.roles).filter(Role.name == 'student').all()]
         dept_projects = Project.query.filter(
             Project.owner_id.in_(dept_student_ids)
         ).all() if dept_student_ids else []
@@ -819,9 +819,9 @@ def contribution_stats():
         own_project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
         dept_project_ids = []
         if current_user.department_id:
-            dept_student_ids = [u.id for u in User.query.filter_by(
-                department_id=current_user.department_id, role='student'
-            ).all()]
+            dept_student_ids = [u.id for u in User.query.filter(
+                User.department_id == current_user.department_id
+            ).join(User.roles).filter(Role.name == 'student').all()]
             if dept_student_ids:
                 dept_project_ids = [p.id for p in Project.query.filter(
                     Project.owner_id.in_(dept_student_ids)
@@ -862,9 +862,9 @@ def milestone_stats():
         own_project_ids = [p.id for p in Project.query.filter_by(owner_id=current_user.id).all()]
         dept_project_ids = []
         if current_user.department_id:
-            dept_student_ids = [u.id for u in User.query.filter_by(
-                department_id=current_user.department_id, role='student'
-            ).all()]
+            dept_student_ids = [u.id for u in User.query.filter(
+                User.department_id == current_user.department_id
+            ).join(User.roles).filter(Role.name == 'student').all()]
             if dept_student_ids:
                 dept_project_ids = [p.id for p in Project.query.filter(
                     Project.owner_id.in_(dept_student_ids)
