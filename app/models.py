@@ -829,3 +829,36 @@ class ProjectComment(db.Model):
     
     def __repr__(self):
         return f'<ProjectComment {self.id} by {self.author_id} on project {self.project_id}>'
+
+    class Badge(db.Model):
+     """Badges awarded to students upon project completion and lecturer rating."""
+    __tablename__ = 'badges'
+
+    id = db.Column(db.Integer, primary_key=True)
+    badge_type = db.Column(db.String(50), nullable=False)  # 'project_completion' or 'excellence'
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    icon = db.Column(db.String(50), default='bi-award')
+    color = db.Column(db.String(20), default='primary')
+
+    # Lecturer rating (1–5) and comment
+    lecturer_rating = db.Column(db.Integer)
+    lecturer_comment = db.Column(db.Text)
+
+    is_issued = db.Column(db.Boolean, default=False)
+
+    awarded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Foreign keys
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    awarded_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Relationships
+    student = db.relationship('User', foreign_keys=[student_id], backref='badges')
+    project = db.relationship('Project', backref=db.backref('badges', lazy='dynamic'))
+    awarded_by = db.relationship('User', foreign_keys=[awarded_by_id], backref='awarded_badges')
+
+    def __repr__(self):
+        return f'<Badge {self.title} for student {self.student_id}>'    
