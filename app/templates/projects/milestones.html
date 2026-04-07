@@ -64,9 +64,6 @@
                             <i class="bi bi-calendar me-1"></i>
                             Due: {{ milestone.due_date.strftime('%b %d, %Y') if milestone.due_date else 'No deadline' }}
                         </span>
-                        <span class="{% if milestone.is_overdue %}text-danger fw-bold{% elif milestone.time_status == 'Due today' or milestone.time_status == 'Due tomorrow' %}text-warning{% endif %}">
-                            <i class="bi bi-clock me-1"></i>{{ milestone.time_status }}
-                        </span>
                         {% if milestone.assigned_to %}
                         <span>
                             <i class="bi bi-person me-1"></i>

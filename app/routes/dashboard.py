@@ -137,6 +137,21 @@ def student_dashboard():
             (Project.visibility == 'public')
         )
     recommended = recommended.order_by(Project.created_at.desc()).limit(5).all()
+
+    # Get student's applications
+    applications = ProjectApplication.query.filter_by(
+        user_id=current_user.id
+    ).order_by(ProjectApplication.applied_at.desc()).limit(10).all()
+
+    # Build recent activity from contributions
+    recent_activity = []
+    for c in recent_contributions:
+        recent_activity.append({
+            'message': f'Contributed to {c.project.title}: {c.title or c.description[:50]}',
+            'timestamp': c.created_at,
+            'icon': 'bi-plus-circle',
+            'icon_class': 'text-success'
+        })
     
     return render_template('dashboard/student.html',
                          projects=projects,
@@ -149,6 +164,8 @@ def student_dashboard():
                          total_contributions=total_contributions,
                          total_hours=total_hours,
                          recent_contributions=recent_contributions,
+                         recent_activity=recent_activity,
+                         applications=applications,
                          unread_notifications=unread_notifications,
                          recommended_projects=recommended)
 

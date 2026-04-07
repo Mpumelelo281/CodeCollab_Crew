@@ -79,8 +79,11 @@ def create_app(config_name='default'):
     def update_last_seen():
         from flask_login import current_user as _cu
         if _cu.is_authenticated:
-            _cu.last_seen = datetime.now(tz.utc)
-            db.session.commit()
+            try:
+                _cu.last_seen = datetime.now(tz.utc)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     # Add context processor for global template variables
     @app.context_processor

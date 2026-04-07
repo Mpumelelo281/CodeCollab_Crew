@@ -111,9 +111,9 @@ def add_contribution(project_id):
     project = Project.query.get_or_404(project_id)
     form = ContributionForm()
     
-    # Get milestones for linking
+    # Get milestones for linking (include all milestones)
     form.milestone.choices = [(0, 'No specific milestone')] + [
-        (m.id, m.title) for m in project.milestones.filter(Milestone.status != 'completed').all()
+        (m.id, m.title) for m in project.milestones.all()
     ]
     
     if form.validate_on_submit():
