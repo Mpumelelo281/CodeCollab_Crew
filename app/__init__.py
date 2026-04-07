@@ -85,7 +85,8 @@ def create_app(config_name='default'):
     # Add context processor for global template variables
     @app.context_processor
     def inject_now():
-        return {'now': datetime.now(tz.utc)}
+        # Use naive UTC so template comparisons work with naive DB datetimes
+        return {'now': datetime.utcnow()}
     
     return app
 
