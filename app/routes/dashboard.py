@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import (User, Project, ProjectMember, Milestone, Contribution, 
                        ProjectApplication, Notification, Department, Skill, ProjectGrade,
-                       ProjectComment, ProjectUpdate, Role)
+                       ProjectComment, ProjectUpdate, Role, ProjectMessage)
 from app.forms import ProfileForm
 from app.utils.decorators import lecturer_required, admin_required
 from sqlalchemy import func
@@ -1135,8 +1135,13 @@ def add_project_comment(project_id):
     project = Project.query.get_or_404(project_id)
     
     if project.owner_id != current_user.id:
-        flash('You do not have permission to comment on this project.', 'danger')
-        return redirect(url_for('dashboard.index'))
+        # Also allow department lecturers to comment
+        is_dept_lecturer = (current_user.is_lecturer and
+                            current_user.department_id is not None and
+                            project.department_id == current_user.department_id)
+        if not is_dept_lecturer:
+            flash('You do not have permission to comment on this project.', 'danger')
+            return redirect(url_for('dashboard.index'))
     
     content = request.form.get('content', '').strip()
     comment_type = request.form.get('comment_type', 'project')
@@ -1192,3 +1197,205 @@ def delete_comment(comment_id):
     
     flash('Comment deleted.', 'success')
     return redirect(request.referrer or url_for('dashboard.index'))
+
+
+# ============== PROJECT MESSAGING ROUTES ==============
+
+@dashboard_bp.route('/project/<int:project_id>/messages')
+@login_required
+def project_messages(project_id):
+    """View all messages for a project."""
+    project = Project.query.get_or_404(project_id)
+
+    # Allow lecturers in the same department, project owner, or active members
+    is_owner = project.owner_id == current_user.id
+    is_member = ProjectMember.query.filter_by(
+        project_id=project_id, user_id=current_user.id, status='active'
+    ).first() is not None
+    is_dept_lecturer = (current_user.is_lecturer and
+                        current_user.department_id is not None and
+                        current_user.department_id == project.department_id)
+
+    if not (is_owner or is_member or is_dept_lecturer or current_user.is_admin):
+        flash('You do not have permission to view messages for this project.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    # Get top-level messages (not replies) ordered by newest first
+    messages = ProjectMessage.query.filter_by(
+        project_id=project_id, parent_id=None
+    ).order_by(ProjectMessage.created_at.desc()).all()
+
+    # Mark unread messages as read for this user
+    unread = ProjectMessage.query.filter(
+        ProjectMessage.project_id == project_id,
+        ProjectMessage.sender_id != current_user.id,
+        ProjectMessage.is_read == False
+    ).all()
+    for msg in unread:
+        msg.is_read = True
+    db.session.commit()
+
+    return render_template('dashboard/project_messages.html',
+                         project=project,
+                         messages=messages,
+                         is_lecturer=current_user.is_lecturer,
+                         is_owner=is_owner,
+                         is_member=is_member)
+
+
+@dashboard_bp.route('/project/<int:project_id>/messages/send', methods=['POST'])
+@login_required
+def send_project_message(project_id):
+    """Send a message on a project (lecturer or student)."""
+    project = Project.query.get_or_404(project_id)
+
+    # Permission check
+    is_owner = project.owner_id == current_user.id
+    is_member = ProjectMember.query.filter_by(
+        project_id=project_id, user_id=current_user.id, status='active'
+    ).first() is not None
+    is_dept_lecturer = (current_user.is_lecturer and
+                        current_user.department_id is not None and
+                        current_user.department_id == project.department_id)
+
+    if not (is_owner or is_member or is_dept_lecturer or current_user.is_admin):
+        flash('You do not have permission to send messages on this project.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    content = request.form.get('content', '').strip()
+    if not content:
+        flash('Message cannot be empty.', 'warning')
+        return redirect(url_for('dashboard.project_messages', project_id=project_id))
+
+    message = ProjectMessage(
+        content=content,
+        project_id=project_id,
+        sender_id=current_user.id
+    )
+    db.session.add(message)
+    db.session.commit()
+
+    # Send notifications
+    from app.utils.notifications import send_notification
+
+    if current_user.is_lecturer:
+        # Notify project owner and all active members
+        notified_ids = set()
+        if project.owner_id != current_user.id:
+            send_notification(
+                user_id=project.owner_id,
+                title='New Message from Lecturer',
+                message=f'{current_user.full_name} sent a message on "{project.title}".',
+                notification_type='feedback',
+                action_url=url_for('dashboard.project_messages', project_id=project_id),
+                sender_id=current_user.id,
+                project_id=project_id
+            )
+            notified_ids.add(project.owner_id)
+
+        members = project.members.filter_by(status='active').all()
+        for member in members:
+            if member.user_id not in notified_ids and member.user_id != current_user.id:
+                send_notification(
+                    user_id=member.user_id,
+                    title='New Message from Lecturer',
+                    message=f'{current_user.full_name} sent a message on "{project.title}".',
+                    notification_type='feedback',
+                    action_url=url_for('dashboard.project_messages', project_id=project_id),
+                    sender_id=current_user.id,
+                    project_id=project_id
+                )
+    else:
+        # Student sent a message — notify department lecturers
+        if project.department_id:
+            lecturers = User.query.filter(
+                User.department_id == project.department_id
+            ).join(User.roles).filter(Role.name == 'lecturer').all()
+            for lecturer in lecturers:
+                send_notification(
+                    user_id=lecturer.id,
+                    title='New Message from Student',
+                    message=f'{current_user.full_name} sent a message on "{project.title}".',
+                    notification_type='feedback',
+                    action_url=url_for('dashboard.project_messages', project_id=project_id),
+                    sender_id=current_user.id,
+                    project_id=project_id
+                )
+
+    flash('Message sent successfully.', 'success')
+    return redirect(url_for('dashboard.project_messages', project_id=project_id))
+
+
+@dashboard_bp.route('/project/<int:project_id>/messages/<int:message_id>/reply', methods=['POST'])
+@login_required
+def reply_project_message(project_id, message_id):
+    """Reply to a message on a project."""
+    project = Project.query.get_or_404(project_id)
+    parent_message = ProjectMessage.query.get_or_404(message_id)
+
+    if parent_message.project_id != project_id:
+        flash('Invalid message.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    # Permission check
+    is_owner = project.owner_id == current_user.id
+    is_member = ProjectMember.query.filter_by(
+        project_id=project_id, user_id=current_user.id, status='active'
+    ).first() is not None
+    is_dept_lecturer = (current_user.is_lecturer and
+                        current_user.department_id is not None and
+                        current_user.department_id == project.department_id)
+
+    if not (is_owner or is_member or is_dept_lecturer or current_user.is_admin):
+        flash('You do not have permission to reply on this project.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    content = request.form.get('content', '').strip()
+    if not content:
+        flash('Reply cannot be empty.', 'warning')
+        return redirect(url_for('dashboard.project_messages', project_id=project_id))
+
+    reply = ProjectMessage(
+        content=content,
+        project_id=project_id,
+        sender_id=current_user.id,
+        parent_id=message_id
+    )
+    db.session.add(reply)
+    db.session.commit()
+
+    # Notify the original message sender
+    from app.utils.notifications import send_notification
+    if parent_message.sender_id != current_user.id:
+        send_notification(
+            user_id=parent_message.sender_id,
+            title='New Reply on Your Message',
+            message=f'{current_user.full_name} replied to your message on "{project.title}".',
+            notification_type='feedback',
+            action_url=url_for('dashboard.project_messages', project_id=project_id),
+            sender_id=current_user.id,
+            project_id=project_id
+        )
+
+    flash('Reply sent successfully.', 'success')
+    return redirect(url_for('dashboard.project_messages', project_id=project_id))
+
+
+@dashboard_bp.route('/message/<int:message_id>/delete', methods=['POST'])
+@login_required
+def delete_message(message_id):
+    """Delete a message (only by the sender)."""
+    message = ProjectMessage.query.get_or_404(message_id)
+
+    if message.sender_id != current_user.id and not current_user.is_admin:
+        flash('You can only delete your own messages.', 'danger')
+        return redirect(request.referrer or url_for('dashboard.index'))
+
+    project_id = message.project_id
+    # Delete replies first
+    ProjectMessage.query.filter_by(parent_id=message.id).delete()
+    db.session.delete(message)
+    db.session.commit()
+
+    flash('Message deleted.', 'success')
+    return redirect(url_for('dashboard.project_messages', project_id=project_id))

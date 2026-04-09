@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - {{ project.title }} - CodeCollab Crew{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.title[:30] }}{% if project.title|length > 30 %}...{% endif %}</a></li>
+            <li class="breadcrumb-item active">Messages</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1"><i class="bi bi-chat-dots me-2"></i>Project Messages</h2>
+                    <p class="text-muted mb-0">{{ project.title }}</p>
+                </div>
+                <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Project
+                </a>
+            </div>
+
+            <!-- Send New Message -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Send a Message</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('dashboard.send_project_message', project_id=project.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <textarea class="form-control" name="content" rows="3" 
+                                      placeholder="Type your message here..." required
+                                      maxlength="2000"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Messages List -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="card mb-3 message-card {% if message.sender.is_lecturer %}border-start border-4 border-primary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="avatar {% if message.sender.is_lecturer %}bg-primary{% else %}bg-success{% endif %} me-3 flex-shrink-0" 
+                             style="width:40px;height:40px;border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem;">
+                            {{ message.sender.first_name[0] }}{{ message.sender.last_name[0] }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ message.sender.full_name }}</strong>
+                                    {% if message.sender.is_lecturer %}
+                                    <span class="badge bg-primary ms-1">Lecturer</span>
+                                    {% else %}
+                                    <span class="badge bg-success ms-1">Student</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted">{{ message.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                                    {% if message.sender_id == current_user.id %}
+                                    <form action="{{ url_for('dashboard.delete_message', message_id=message.id) }}" 
+                                          method="POST" class="d-inline"
+                                          onsubmit="return confirm('Delete this message and all its replies?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-2 message-content">
+                                {{ message.content|e|replace('\n', '<br>')|safe }}
+                            </div>
+
+                            <!-- Replies -->
+                            {% if message.replies.count() > 0 %}
+                            <div class="mt-3 ms-3 border-start ps-3">
+                                <small class="text-muted d-block mb-2">
+                                    <i class="bi bi-reply me-1"></i>{{ message.replies.count() }} 
+                                    repl{{ 'y' if message.replies.count() == 1 else 'ies' }}
+                                </small>
+                                {% for reply in message.replies.all() %}
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="avatar-sm {% if reply.sender.is_lecturer %}bg-primary{% else %}bg-success{% endif %} me-2 flex-shrink-0"
+                                         style="width:28px;height:28px;border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.65rem;">
+                                        {{ reply.sender.first_name[0] }}{{ reply.sender.last_name[0] }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong class="small">{{ reply.sender.full_name }}</strong>
+                                                {% if reply.sender.is_lecturer %}
+                                                <span class="badge bg-primary" style="font-size:0.65rem;">Lecturer</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <small class="text-muted" style="font-size:0.75rem;">{{ reply.created_at.strftime('%b %d, %H:%M') }}</small>
+                                                {% if reply.sender_id == current_user.id %}
+                                                <form action="{{ url_for('dashboard.delete_message', message_id=reply.id) }}" 
+                                                      method="POST" class="d-inline"
+                                                      onsubmit="return confirm('Delete this reply?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete" style="font-size:0.75rem;">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="small mt-1">
+                                            {{ reply.content|e|replace('\n', '<br>')|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Reply Form -->
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-outline-secondary reply-toggle" 
+                                        data-target="reply-form-{{ message.id }}">
+                                    <i class="bi bi-reply me-1"></i>Reply
+                                </button>
+                                <div id="reply-form-{{ message.id }}" class="mt-2" style="display:none;">
+                                    <form action="{{ url_for('dashboard.reply_project_message', project_id=project.id, message_id=message.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="input-group">
+                                            <textarea class="form-control form-control-sm" name="content" rows="2" 
+                                                      placeholder="Write a reply..." required
+                                                      maxlength="2000"></textarea>
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-chat-dots text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-muted">No messages yet</h5>
+                    <p class="text-muted">Start a conversation about this project.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.reply-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var target = document.getElementById(this.getAttribute('data-target'));
+        if (target.style.display === 'none') {
+            target.style.display = 'block';
+            target.querySelector('textarea').focus();
+        } else {
+            target.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

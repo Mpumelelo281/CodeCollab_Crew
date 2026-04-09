@@ -6,7 +6,8 @@ from app import db
 from app.models import (Project, Milestone, ProjectApplication, ProjectMember, 
                        Skill, Tool, Course, Department, Notification, AuditLog, ProjectFile,
                        Task, ProjectInvitation, User, Contribution, ProjectUpdate,
-                       Feedback, MilestoneSubmission, SubmissionFile, ProjectGrade, ProjectComment)
+                       Feedback, MilestoneSubmission, SubmissionFile, ProjectGrade, ProjectComment,
+                       ProjectMessage)
 from app.forms import ProjectForm, MilestoneForm, ApplicationForm, ProjectSearchForm
 from app.utils.decorators import lecturer_required, project_owner_required, project_member_required
 from app.utils.notifications import send_notification
@@ -172,6 +173,15 @@ def view_project(project_id):
     project_files = project.files.filter_by(is_current=True)\
         .order_by(ProjectFile.uploaded_at.desc()).all()
     
+    # Get unread message count for this user
+    unread_message_count = 0
+    if current_user.is_authenticated:
+        unread_message_count = ProjectMessage.query.filter(
+            ProjectMessage.project_id == project_id,
+            ProjectMessage.sender_id != current_user.id,
+            ProjectMessage.is_read == False
+        ).count()
+    
     return render_template('projects/view.html',
                          project=project,
                          has_applied=has_applied,
@@ -188,7 +198,8 @@ def view_project(project_id):
                          updates=updates,
                          recent_contributions=recent_contributions,
                          project_files=project_files,
-                         team_count=member_count)
+                         team_count=member_count,
+                         unread_message_count=unread_message_count)
 
 
 @projects_bp.route('/create', methods=['GET', 'POST'])

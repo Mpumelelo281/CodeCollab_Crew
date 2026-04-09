@@ -135,6 +135,11 @@
                                                         <i class="bi bi-kanban me-2"></i>Workspace
                                                     </a>
                                                 </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ url_for('dashboard.project_messages', project_id=project.id) }}">
+                                                        <i class="bi bi-chat-dots me-2"></i>Messages
+                                                    </a>
+                                                </li>
                                             </ul>
                                         </div>
                                     </td>

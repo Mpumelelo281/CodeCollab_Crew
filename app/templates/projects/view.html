@@ -357,6 +357,12 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        <a href="{{ url_for('dashboard.project_messages', project_id=project.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-chat-dots me-2"></i>Messages
+                            {% if unread_message_count is defined and unread_message_count > 0 %}
+                            <span class="badge bg-danger ms-1">{{ unread_message_count }}</span>
+                            {% endif %}
+                        </a>
                         <a href="{{ url_for('projects.view_tasks', project_id=project.id) }}" class="btn btn-outline-primary">
                             <i class="bi bi-list-task me-2"></i>Tasks
                         </a>

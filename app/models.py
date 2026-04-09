@@ -829,3 +829,28 @@ class ProjectComment(db.Model):
     
     def __repr__(self):
         return f'<ProjectComment {self.id} by {self.author_id} on project {self.project_id}>'
+
+
+class ProjectMessage(db.Model):
+    """Messages between lecturers and students on projects."""
+    __tablename__ = 'project_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Foreign keys
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('project_messages.id'))  # For replies
+
+    # Relationships
+    project = db.relationship('Project', backref=db.backref('messages', lazy='dynamic', order_by='ProjectMessage.created_at'))
+    sender = db.relationship('User', backref='sent_messages')
+    replies = db.relationship('ProjectMessage', backref=db.backref('parent', remote_side=[id]), lazy='dynamic', order_by='ProjectMessage.created_at')
+
+    def __repr__(self):
+        return f'<ProjectMessage {self.id} by {self.sender_id} on project {self.project_id}>'
