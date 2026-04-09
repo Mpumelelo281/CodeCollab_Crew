@@ -69,7 +69,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <small class="text-muted">{{ message.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                                    <small class="text-muted">{{ message.created_at|local_time }}</small>
                                     {% if message.sender_id == current_user.id %}
                                     <form action="{{ url_for('dashboard.delete_message', message_id=message.id) }}" 
                                           method="POST" class="d-inline"
@@ -108,7 +108,7 @@
                                                 {% endif %}
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <small class="text-muted" style="font-size:0.75rem;">{{ reply.created_at.strftime('%b %d, %H:%M') }}</small>
+                                                <small class="text-muted" style="font-size:0.75rem;">{{ reply.created_at|local_time('%b %d, %I:%M %p') }}</small>
                                                 {% if reply.sender_id == current_user.id %}
                                                 <form action="{{ url_for('dashboard.delete_message', message_id=reply.id) }}" 
                                                       method="POST" class="d-inline"

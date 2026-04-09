@@ -90,7 +90,20 @@ def create_app(config_name='default'):
     def inject_now():
         # Use naive UTC so template comparisons work with naive DB datetimes
         return {'now': datetime.utcnow()}
-    
+
+    # Add template filter to convert UTC to local time (SAST)
+    @app.template_filter('local_time')
+    def local_time_filter(utc_dt, fmt='%b %d, %Y %I:%M %p'):
+        """Convert a UTC datetime to South Africa Standard Time (UTC+2)."""
+        if utc_dt is None:
+            return ''
+        from datetime import timedelta
+        if utc_dt.tzinfo is None:
+            utc_dt = utc_dt.replace(tzinfo=tz.utc)
+        sast = tz(timedelta(hours=2))
+        local_dt = utc_dt.astimezone(sast)
+        return local_dt.strftime(fmt)
+
     return app
 
 

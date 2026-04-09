@@ -847,11 +847,15 @@ def project_contributions(project_id):
     # Get timeline data
     timeline = contributions[:50]  # Last 50 contributions
     
+    # Calculate total hours safely (hours_spent can be None)
+    total_hours = sum(c.hours_spent or 0 for c in contributions)
+    
     return render_template('dashboard/project_contributions.html',
                          project=project,
                          contributions=contributions,
                          contributions_by_user=contributions_by_user,
-                         timeline=timeline)
+                         timeline=timeline,
+                         total_hours=round(total_hours, 1))
 
 
 # API endpoints for dashboard charts
